@@ -4,9 +4,9 @@
 typedef struct {
 	int S;
 	int V;
-	float transition[2][2];
-	float emission[2][3];
-	float prior[2];
+	float* transition;
+	float* emission;
+	float* prior;
 }hmm_desc;
 
 int ViterbiUpdate_C(float* InputArray, float* OutputArray, hmm_desc* hmm, int Observation){
@@ -18,7 +18,7 @@ int ViterbiUpdate_C(float* InputArray, float* OutputArray, hmm_desc* hmm, int Ob
 		{
 			//printf("%f, %f\n",InputArray[i],hmm->transition[i][s]);
 			//printf("multipilcation test %f\n",InputArray[i]*(hmm->transition[i][s]));
-			trans_p[i] = InputArray[i]*(hmm->transition[i][s]);
+			trans_p[i] = InputArray[i]*(hmm->transition[i*hmm->S + s]);
 			//printf("%f\n",trans_p[i]);
 		}
 		
@@ -44,7 +44,7 @@ int ViterbiUpdate_C(float* InputArray, float* OutputArray, hmm_desc* hmm, int Ob
 		
 		//printf("psiOut[%d] = %f\n",s,OutputArray[hmm->S + s]);
 		
-		OutputArray[s] *= hmm->emission[s][Observation];
+		OutputArray[s] *= hmm->emission[s*hmm->V + Observation];
 		
 	} 
 	
@@ -69,13 +69,23 @@ int ViterbiUpdate_C(float* InputArray, float* OutputArray, hmm_desc* hmm, int Ob
 int main()
 {
 	printf("hello\n");
-	hmm_desc hmm = {2,6,
-									{{0.75,0.25},{0.32,0.68}},
-									{{0.8,0.1,0.1},{0.1,0.2,0.7}},
-									{0.5,0.5}};
 	
-						
+	hmm_desc hmm;
+	
+	hmm.S = 2;
+	hmm.V = 3;
+	
+	float a[] = {0.75,0.25,0.32,0.68};
+	hmm.transition = a;
+	
+	float b[] = {0.8,0.1,0.1,0.1,0.2,0.7};
+	hmm.emission = b;
+	
+	float c[] = {0.5,0.5};
+	hmm.prior = c;
+	
 	int observation[] = {0,1,2,0,1,2};
+	int numberOfTimeSteps = 6;
 									
 	float vitInput[hmm.S];
 						
@@ -83,7 +93,7 @@ int main()
 	
 	for(int i=0; i<hmm.S;i++)
 	{
-		vitInput[i] = hmm.prior[i] * hmm.emission[i][observation[0]];
+		vitInput[i] = hmm.prior[i] * hmm.emission[i*hmm.V + observation[0]];
 		
 		sumOfVitInput+=vitInput[i];
 	}	
@@ -101,7 +111,7 @@ int main()
 	float vitpsiOutput[hmm.S*2];
 	memset(vitpsiOutput, 0, sizeof(vitpsiOutput));
 	
-	for(int t=1;t<hmm.V;t++)
+	for(int t=1;t<numberOfTimeSteps;t++)
 	{
 		
 		ViterbiUpdate_C(vitInput, vitpsiOutput, &hmm, observation[t]);
