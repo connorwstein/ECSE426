@@ -8,6 +8,7 @@
 	IMPORT emission
 	IMPORT prior
 	IMPORT observation
+	IMPORT ViterbiUpdate_asm
 	; INPUT parameters
 	; R0: Pointer to the vitpsi[:,t-1] vector
 	; R1: Pointer to the vitspi[:,t] vector for output
@@ -83,10 +84,10 @@ viterbi_testbed
 	;observations are at =observations 
 	LDR R0, =input ; pointer to input array
 	LDR R1, =output ; pointer to output array
-	LDR R2, =s ; pointer to hmm struct
 	LDR R4, =observation
-	LDR R3, [R4] ; observation value
-	BL viterbi
+	LDR R2, [R4] ; observation value
+	LDR R3, =s ; pointer to hmm struct
+	BL ViterbiUpdate_asm
 	
 
 	END

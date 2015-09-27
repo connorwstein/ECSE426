@@ -72,8 +72,8 @@ int main()
 	
 	hmm_desc hmm;
 	
-	hmm.S = 2;
-	hmm.V = 3;
+	hmm.S = 2; //2 states
+	hmm.V = 3; //3 observational types
 	
 	float a[] = {0.75,0.25,0.32,0.68};
 	hmm.transition = a;
@@ -104,9 +104,6 @@ int main()
 		printf("vitInput[%d] = %f",i,vitInput[i]);
 	}
 	printf("\n");
-	
-	//float vitMatrix[hmm.S][hmm.V-1];
-	//memset(vitMatrix, 0, sizeof(vitMatrix));
 	
 	float vitpsiOutput[hmm.S*2];
 	memset(vitpsiOutput, 0, sizeof(vitpsiOutput));

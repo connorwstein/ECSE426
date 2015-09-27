@@ -1,0 +1,94 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000                 AREA             mycode, CODE ; must be indented
+                                                            
+    2 00000000                 EXPORT           quiz1       ; must be indented
+    3 00000000         quiz1
+    4 00000000         ; Mov value of R7 into R9
+    5 00000000 F04F 07FF       MOV              R7, #0xFF
+    6 00000004 46B9            MOV              R9, R7
+    7 00000006         ; Mov value at the address stored in R11 into R10
+    8 00000006 00 00 000000FF 
+                       value   DCD              0xFF
+    9 0000000C F8DF B02C       LDR              R11, =value
+   10 00000010 F8DB A000       LDR              R10, [R11]
+   11 00000014         ; Move the value stored at 8 bytes after the address sto
+                       red in R7 into R8
+   12 00000014 00000012 
+                       value2  DCD              0x12
+   13 00000018 4F09            LDR              R7, =value2-8 ; store address o
+                                                            f 8 bytes before 0x
+                                                            12 in R7 note can u
+                                                            se negative numbers
+                                                            
+   14 0000001A F8D7 8008       LDR              R8, [R7,#8] ; R8=whats at R7+8 
+                                                            address
+   15 0000001E         ; Move 2s complement of R4 into R3 with two instructions
+                       
+   16 0000001E F240 1401       MOV              R4, #0x0101
+   17 00000022 EA6F 0404       MVN              R4, R4      ;invert and add 1
+   18 00000026 F104 0301       ADD              R3, R4, #1  ; note you need the
+                                                             carry add or it wo
+                                                            nt work
+   19 0000002A         ; Write one line of assembly to do the same using the re
+                       verse subtraction
+   20 0000002A F04F 0412       MOV              R4, #0x12
+   21 0000002E F04F 0300       MOV              R3, #0
+   22 00000032 F1C4 0400       RSB              R4, R4, #0
+   23 00000036 F04F 0500       MOV              R5, #0
+   24 0000003A         
+   25 0000003A                 END                          ; must be indented
+              00 00 00000000 
+              FFFFFFF8 
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=int
+erwork --depend=.\object\quiz1_studying.d -o.\object\quiz1_studying.o -I"E:\McG
+ill5\ECSE426\Lab 1\RTE" -I"E:\McGill5\ECSE426\Lab 1\RTE\Device\STM32F407VG" -IC
+:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include -IC:\Keil_v5\ARM\PACK\Keil\STM
+32F4xx_DFP\1.0.8\Device\Include --predefine="__EVAL SETA 1" --predefine="__MICR
+OLIB SETA 1" --predefine="__UVISION_VERSION SETA 516" --predefine="_RTE_ SETA 1
+" --predefine="STM32F40_41xxx SETA 1" --list=.\listings\quiz1_studying.lst Quiz
+1_Studying.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+mycode 00000000
+
+Symbol: mycode
+   Definitions
+      At line 1 in file Quiz1_Studying.s
+   Uses
+      None
+Comment: mycode unused
+quiz1 00000000
+
+Symbol: quiz1
+   Definitions
+      At line 3 in file Quiz1_Studying.s
+   Uses
+      At line 2 in file Quiz1_Studying.s
+Comment: quiz1 used once
+value 00000008
+
+Symbol: value
+   Definitions
+      At line 8 in file Quiz1_Studying.s
+   Uses
+      At line 9 in file Quiz1_Studying.s
+Comment: value used once
+value2 00000014
+
+Symbol: value2
+   Definitions
+      At line 12 in file Quiz1_Studying.s
+   Uses
+      At line 13 in file Quiz1_Studying.s
+Comment: value2 used once
+4 symbols
+342 symbols in table

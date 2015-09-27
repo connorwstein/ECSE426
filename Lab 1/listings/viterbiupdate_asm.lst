@@ -1,0 +1,333 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000                 AREA             myCode, CODE, READONLY
+    2 00000000                 EXPORT           ViterbiUpdate_asm
+    3 00000000         
+    4 00000000         ;R0 = A pointer to vitpsi[:,t-1]
+    5 00000000         ;R1 = A pointer to vitpsi[:,t]
+    6 00000000         ;R2 = The observation
+    7 00000000         ;R3 = A pointer to the hmm variables
+    8 00000000         
+    9 00000000         ViterbiUpdate_asm
+                               FUNCTION
+   10 00000000 681D            LDR              R5, [R3]    ;load number of sta
+                                                            tes
+   11 00000002 685E            LDR              R6, [R3,#4] ;load number of obs
+                                                            ervation types
+   12 00000004 689F            LDR              R7, [R3,#8] ;load address of tr
+                                                            ansition
+   13 00000006         
+   14 00000006 F04F 0804       MOV              R8, #4      ;4 bytes
+   15 0000000A FB06 F908       MUL              R9, R6, R8  ;this is number of 
+                                                            bytes times number 
+                                                            of observation type
+                                                            s
+   16 0000000E FB05 FA09       MUL              R10, R5, R9 ;get to offset to e
+                                                            mission address
+   17 00000012 EBA7 060A       SUB              R6, R7, R10 ;get address of emi
+                                                            ssion
+   18 00000016         
+   19 00000016 FB05 F908       MUL              R9, R5, R8  ;this is number of 
+                                                            bytes times number 
+                                                            of states
+   20 0000001A F04F 3BFF       MOV              R11, #-1    ;this is the number
+                                                             of states in the o
+                                                            uter loop.
+   21 0000001E         bigOuterLoop
+   22 0000001E F11B 0B01       ADDS             R11, #1
+   23 00000022 45AB            CMP              R11, R5
+   24 00000024 D052            BEQ              doneBigOuterLoop
+   25 00000026         getTransP
+   26 00000026 F115 35FF       ADDS             R5, #-1
+   27 0000002A 2D00            CMP              R5, #0
+   28 0000002C DB14            BLT              doneTransP
+   29 0000002E FB05 FA08       MUL              R10, R5, R8 ;jump amount for vi
+                                                            t[:,t-1]
+   30 00000032 EB10 0A0A       ADDS             R10, R0, R10 ;get address for n
+                                                            ew position in vit
+   31 00000036 ED9A 0A00       VLDR.32          S0, [R10]   ;get the value in v
+                                                            it[:,t-1]
+   32 0000003A FB05 FA09       MUL              R10, R5, R9 ;jump amount for tr
+                                                            ansition
+   33 0000003E EB17 0A0A       ADDS             R10, R7, R10 ;get address for n
+                                                            ew position in tran
+                                                            sition
+   34 00000042 FB0B FC08       MUL              R12, R11, R8 ;amount needed to 
+                                                            shift to correct co
+                                                            lumn
+   35 00000046 EB1C 0A0A       ADDS             R10, R12, R10 ;this shifts the 
+                                                            address to the corr
+                                                            ect column of trans
+                                                            ition
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   36 0000004A EDDA 0A00       VLDR.32          S1, [R10]   ;get the next value
+                                                             in transition
+   37 0000004E EE20 1A20       VMUL.F32         S2, S0, S1  ;multiply the value
+                                                            s
+   38 00000052 ED2D 1A01       VPUSH{S2}                    ;store this value o
+                                                            n the stack
+   39 00000056 E7E6            B                getTransP
+   40 00000058         doneTransP
+   41 00000058 681D            LDR              R5, [R3]    ;reload number of s
+                                                            tates
+   42 0000005A ECFD 1A01       VPOP{S3}                     ;get trans_p[2]
+   43 0000005E ED9F 5A2B       VLDR.F32         S10, = 0.0  ;this will have the
+                                                             index of the max v
+                                                            alue.
+   44 00000062 EDDF 4A2A       VLDR.F32         S9, = 0.0   ;this will incremen
+                                                            t by 1 at every loo
+                                                            p iteration
+   45 00000066 EEB7 4A00       VLDR.F32         S8, = 1.0   ;the amount to incr
+                                                            ement by
+   46 0000006A         getMaxValue
+   47 0000006A F115 35FF       ADDS             R5,#-1
+   48 0000006E 2D00            CMP              R5, #0
+   49 00000070 D00D            BEQ              doneMaxValue
+   50 00000072 ECBD 2A01       VPOP{S4}                     ;get trans_p[3,4...
+                                                            n, and then lastly 
+                                                            1]
+   51 00000076 EE74 4A84       VADD.F32         S9,S9,S8    ;increment the coun
+                                                            ter
+   52 0000007A EEB4 2A61       VCMP.F32         S4,S3       ;compare this value
+                                                             with current max v
+                                                            alue
+   53 0000007E EEF1 FA10       VMRS             APSR_nzcv, FPSCR
+   54 00000082 DBF2            BLT              getMaxValue ;if the new number 
+                                                            is less than the ma
+                                                            x, go to beginning 
+                                                            of loop
+   55 00000084 EEF0 1A42       VMOV.F32         S3,S4       ;if the new number 
+                                                            is greater than or 
+                                                            equal, set that as 
+                                                            the max.
+   56 00000088 EEB0 5A64       VMOV.F32         S10, S9     ;also set the index
+                                                             to the current loo
+                                                            p counter
+   57 0000008C E7ED            B                getMaxValue ;go to beginning of
+                                                             loop
+   58 0000008E         doneMaxValue
+   59 0000008E 681D            LDR              R5, [R3]    ;reload number of s
+                                                            tates
+   60 00000090 EB11 0A09       ADDS             R10, R1, R9 ;address for the be
+                                                            ginning of psi
+   61 00000094 FB0B FC08       MUL              R12, R11, R8 ;amount needed to 
+                                                            get to correct posi
+                                                            tion within psi (cu
+                                                            rrent state number 
+                                                            times number of byt
+                                                            es)
+   62 00000098 EB1C 0A0A       ADDS             R10, R12, R10 ;shift to the cor
+                                                            rect position withi
+                                                            n psi
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+   63 0000009C ED8A 5A00       VSTR             S10, [R10]  ;store index in psi
+                                                            
+   64 000000A0 FB0B FC08       MUL              R12, R11, R8 ;current state num
+                                                            ber times number of
+                                                             bytes
+   65 000000A4 685D            LDR              R5, [R3,#4] ;load number of obs
+                                                            ervation types
+   66 000000A6 FB0C F505       MUL              R5, R12, R5 ;number of observat
+                                                            ion types times sta
+                                                            te number times num
+                                                            ber of bytes
+   67 000000AA 46B2            MOV              R10, R6     ;get address of emi
+                                                            ssion
+   68 000000AC EB15 0A0A       ADDS             R10, R5, R10 ;get the address o
+                                                            f the correct row
+   69 000000B0 EB12 0A0A       ADDS             R10, R2, R10 ;shift to the corr
+                                                            ect column. This re
+                                                            quires the observat
+                                                            ion input.
+   70 000000B4 ED9A 2A00       VLDR.32          S4, [R10]   ;load the emission 
+                                                            entry
+   71 000000B8 EE61 1A82       VMUL.F32         S3, S3, S4  ;multiply the max v
+                                                            alue by the emissio
+                                                            n entry
+   72 000000BC FB0B FA08       MUL              R10, R11, R8 ;jump amount for v
+                                                            it[:,t]
+   73 000000C0 EB11 0A0A       ADDS             R10, R1, R10 ;get address for n
+                                                            ew position in vit
+   74 000000C4 EDCA 1A00       VSTR             S3, [R10]   ;store the max valu
+                                                            e in vit[s,t]
+   75 000000C8 681D            LDR              R5, [R3]    ;reload the number 
+                                                            of states
+   76 000000CA E7A8            B                bigOuterLoop ;go back to beginn
+                                                            ing of big loop 
+   77 000000CC         doneBigOuterLoop
+   78 000000CC ED9F 0A0F       VLDR.F32         S0, =0.0
+   79 000000D0         getSumOfVit
+   80 000000D0 F115 35FF       ADDS             R5, #-1
+   81 000000D4 2D00            CMP              R5, #0
+   82 000000D6 DB08            BLT              doneSumOfVit
+   83 000000D8 FB05 FA08       MUL              R10, R5, R8 ;jump amount for vi
+                                                            t[:,t]
+   84 000000DC EB11 0A0A       ADDS             R10, R1, R10 ;get address for n
+                                                            ew position in vit
+   85 000000E0 EDDA 0A00       VLDR.32          S1, [R10]   ;get the value in v
+                                                            it[:,t]
+   86 000000E4 EE30 0A80       VADD.F32         S0, S1, S0  ;add the value to t
+                                                            he cumulative sum
+   87 000000E8 E7F2            B                getSumOfVit
+   88 000000EA         doneSumOfVit
+   89 000000EA 681D            LDR              R5, [R3]    ;reload the number 
+                                                            of states
+   90 000000EC         divideByScale
+   91 000000EC F115 35FF       ADDS             R5, #-1
+   92 000000F0 2D00            CMP              R5, #0
+   93 000000F2 DB0A            BLT              doneDivision
+   94 000000F4 FB05 FA08       MUL              R10, R5, R8 ;jump amount for vi
+                                                            t[:,t]
+   95 000000F8 EB11 0A0A       ADDS             R10, R1, R10 ;get address for n
+
+
+
+ARM Macro Assembler    Page 4 
+
+
+                                                            ew position in vit
+   96 000000FC EDDA 0A00       VLDR.32          S1, [R10]   ;get the value in v
+                                                            it[:,t]
+   97 00000100 EEC0 0A80       VDIV.F32         S1, S1, S0  ;divide the value b
+                                                            y the scale factor
+   98 00000104 EDCA 0A00       VSTR             S1, [R10]   ;store the value ba
+                                                            ck in vit[:,t]
+   99 00000108 E7F0            B                divideByScale
+  100 0000010A         doneDivision
+  101 0000010A 4770            BX               LR
+  102 0000010C                 ENDFUNC
+  103 0000010C                 end
+              00000000 
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=int
+erwork --depend=.\object\viterbiupdate_asm.d -o.\object\viterbiupdate_asm.o -I"
+E:\McGill5\ECSE426\Lab 1\RTE" -I"E:\McGill5\ECSE426\Lab 1\RTE\Device\STM32F407V
+G" -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include -IC:\Keil_v5\ARM\PACK\Ke
+il\STM32F4xx_DFP\1.0.8\Device\Include --predefine="__EVAL SETA 1" --predefine="
+__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 516" --predefine="_RTE_ 
+SETA 1" --predefine="STM32F40_41xxx SETA 1" --list=.\listings\viterbiupdate_asm
+.lst ViterbiUpdate_asm.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+ViterbiUpdate_asm 00000000
+
+Symbol: ViterbiUpdate_asm
+   Definitions
+      At line 9 in file ViterbiUpdate_asm.s
+   Uses
+      At line 2 in file ViterbiUpdate_asm.s
+Comment: ViterbiUpdate_asm used once
+bigOuterLoop 0000001E
+
+Symbol: bigOuterLoop
+   Definitions
+      At line 21 in file ViterbiUpdate_asm.s
+   Uses
+      At line 76 in file ViterbiUpdate_asm.s
+Comment: bigOuterLoop used once
+divideByScale 000000EC
+
+Symbol: divideByScale
+   Definitions
+      At line 90 in file ViterbiUpdate_asm.s
+   Uses
+      At line 99 in file ViterbiUpdate_asm.s
+Comment: divideByScale used once
+doneBigOuterLoop 000000CC
+
+Symbol: doneBigOuterLoop
+   Definitions
+      At line 77 in file ViterbiUpdate_asm.s
+   Uses
+      At line 24 in file ViterbiUpdate_asm.s
+Comment: doneBigOuterLoop used once
+doneDivision 0000010A
+
+Symbol: doneDivision
+   Definitions
+      At line 100 in file ViterbiUpdate_asm.s
+   Uses
+      At line 93 in file ViterbiUpdate_asm.s
+Comment: doneDivision used once
+doneMaxValue 0000008E
+
+Symbol: doneMaxValue
+   Definitions
+      At line 58 in file ViterbiUpdate_asm.s
+   Uses
+      At line 49 in file ViterbiUpdate_asm.s
+Comment: doneMaxValue used once
+doneSumOfVit 000000EA
+
+Symbol: doneSumOfVit
+   Definitions
+      At line 88 in file ViterbiUpdate_asm.s
+   Uses
+      At line 82 in file ViterbiUpdate_asm.s
+Comment: doneSumOfVit used once
+doneTransP 00000058
+
+Symbol: doneTransP
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Relocatable symbols
+
+   Definitions
+      At line 40 in file ViterbiUpdate_asm.s
+   Uses
+      At line 28 in file ViterbiUpdate_asm.s
+Comment: doneTransP used once
+getMaxValue 0000006A
+
+Symbol: getMaxValue
+   Definitions
+      At line 46 in file ViterbiUpdate_asm.s
+   Uses
+      At line 54 in file ViterbiUpdate_asm.s
+      At line 57 in file ViterbiUpdate_asm.s
+
+getSumOfVit 000000D0
+
+Symbol: getSumOfVit
+   Definitions
+      At line 79 in file ViterbiUpdate_asm.s
+   Uses
+      At line 87 in file ViterbiUpdate_asm.s
+Comment: getSumOfVit used once
+getTransP 00000026
+
+Symbol: getTransP
+   Definitions
+      At line 25 in file ViterbiUpdate_asm.s
+   Uses
+      At line 39 in file ViterbiUpdate_asm.s
+Comment: getTransP used once
+myCode 00000000
+
+Symbol: myCode
+   Definitions
+      At line 1 in file ViterbiUpdate_asm.s
+   Uses
+      None
+Comment: myCode unused
+12 symbols
+350 symbols in table
