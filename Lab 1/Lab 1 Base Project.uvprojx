@@ -438,16 +438,6 @@
               <FilePath>.\source\stm32f4xx_conf.h</FilePath>
             </File>
             <File>
-              <FileName>viterbi.s</FileName>
-              <FileType>2</FileType>
-              <FilePath>.\viterbi.s</FilePath>
-            </File>
-            <File>
-              <FileName>viterbi_data.s</FileName>
-              <FileType>2</FileType>
-              <FilePath>.\viterbi_data.s</FilePath>
-            </File>
-            <File>
               <FileName>Quiz1_Studying.s</FileName>
               <FileType>2</FileType>
               <FilePath>.\Quiz1_Studying.s</FilePath>
@@ -456,6 +446,16 @@
               <FileName>ViterbiUpdate_asm.s</FileName>
               <FileType>2</FileType>
               <FilePath>.\ViterbiUpdate_asm.s</FilePath>
+            </File>
+            <File>
+              <FileName>ViterbiUpdate_asm_testbed.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>.\ViterbiUpdate_asm_testbed.s</FilePath>
+            </File>
+            <File>
+              <FileName>ViterbiUpdate_asm_testbed_data.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>.\ViterbiUpdate_asm_testbed_data.s</FilePath>
             </File>
           </Files>
         </Group>

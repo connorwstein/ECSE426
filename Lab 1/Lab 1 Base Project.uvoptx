@@ -321,8 +321,8 @@
       <Focus>0</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\viterbi.s</PathWithFileName>
-      <FilenameWithoutPath>viterbi.s</FilenameWithoutPath>
+      <PathWithFileName>.\Quiz1_Studying.s</PathWithFileName>
+      <FilenameWithoutPath>Quiz1_Studying.s</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -334,8 +334,8 @@
       <Focus>0</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\viterbi_data.s</PathWithFileName>
-      <FilenameWithoutPath>viterbi_data.s</FilenameWithoutPath>
+      <PathWithFileName>.\ViterbiUpdate_asm.s</PathWithFileName>
+      <FilenameWithoutPath>ViterbiUpdate_asm.s</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -347,8 +347,8 @@
       <Focus>0</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\Quiz1_Studying.s</PathWithFileName>
-      <FilenameWithoutPath>Quiz1_Studying.s</FilenameWithoutPath>
+      <PathWithFileName>.\ViterbiUpdate_asm_testbed.s</PathWithFileName>
+      <FilenameWithoutPath>ViterbiUpdate_asm_testbed.s</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -360,8 +360,8 @@
       <Focus>0</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\ViterbiUpdate_asm.s</PathWithFileName>
-      <FilenameWithoutPath>ViterbiUpdate_asm.s</FilenameWithoutPath>
+      <PathWithFileName>.\ViterbiUpdate_asm_testbed_data.s</PathWithFileName>
+      <FilenameWithoutPath>ViterbiUpdate_asm_testbed_data.s</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
