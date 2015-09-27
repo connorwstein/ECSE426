@@ -176,17 +176,17 @@ __Vectors_Size  EQU  __Vectors_End - __Vectors
 ; Reset handler
 Reset_Handler    PROC
                  EXPORT  Reset_Handler             [WEAK]
-								 IMPORT __main
-								 IMPORT viterbi_testbed
-								 IMPORT quiz1
-								 LDR.W R0, =0xE000ED88
-								 LDR R1, [R0]
-								 ORR R1, R1, #(0xF << 20)
-								 STR R1, [R0]
-								 DSB
-								 ISB
-                 LDR     R0, =viterbi_testbed ; Load from memory into R1
-								 
+				 IMPORT __main
+				 IMPORT ViterbiUpdate_asm_testbed
+				 ; Enable floating point unit
+				 LDR.W R0, =0xE000ED88
+				 LDR R1, [R0]
+				 ORR R1, R1, #(0xF << 20)
+				 STR R1, [R0]
+				 DSB
+				 ISB
+				 ; Done floating point unit enable
+                 LDR     R0, =ViterbiUpdate_asm_testbed ; Call the testbed			 
                  BLX     R0
                  ENDP
 

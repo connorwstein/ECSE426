@@ -83,5 +83,4 @@ ViterbiUpdate_asm_testbed
 	LDR R3, =s ; pointer to hmm struct
 	BL ViterbiUpdate_asm
 	
-
 	END
