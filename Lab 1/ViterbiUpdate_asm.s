@@ -7,15 +7,19 @@
 ;R3 = A pointer to the hmm variables
 
 ViterbiUpdate_asm FUNCTION
-	PUSH{R0-R12}
+	PUSH{R4-R12}
+	;SUB R0, #36
+	;SUB R1, #36
+	;SUB R3, #36
 	LDR R4, [R3] ;load number of states
 	LDR R5, [R3,#4] ;load number of observation types
-	LDR R6, [R3,#8] ;load address of transition
+	ADD R6, R3, #8 ;load address of transition
 	
 	MOV R7, #4 ;4 bytes
 	MUL R8, R5, R7 ;this is number of bytes times number of observation types
-	MUL R9, R4, R8 ;get to offset to emission address
-	SUB R5, R6, R9 ;get address of emission
+	MUL R9, R4, R4 ;get to offset to emission address
+	MUL R9, R9, R7 ;get to offset to emission address
+	ADD R5, R6, R9 ;get address of emission
 
 	MUL R8, R4, R7 ;this is number of bytes times number of states
 	MOV R10, #-1 ;this is the number of states in the outer loop.
@@ -58,7 +62,8 @@ getMaxValue
 	B getMaxValue ;go to beginning of loop
 doneMaxValue
 	LDR R4, [R3] ;reload number of states
-	ADDS R9, R1, R8 ;address for the beginning of psi
+	MUL R9, R4, R7; number of states times number of bytes
+	ADDS R9, R1, R9 ;address for the beginning of psi
 	MUL R11, R10, R7 ;amount needed to get to correct position within psi (current state number times number of bytes)
 	ADDS R9, R11, R9 ;shift to the correct position within psi
 	VSTR S10, [R9] ;store index in psi
@@ -67,7 +72,8 @@ doneMaxValue
 	MUL R4, R11, R4 ;number of observation types times state number times number of bytes
 	MOV R9, R5 ;get address of emission
 	ADDS R9, R4, R9 ;get the address of the correct row
-	ADDS R9, R2, R9 ;shift to the correct column. This requires the observation input.
+	MUL R12, R2, R7 ;observation number times number of bytes
+	ADDS R9, R12, R9 ;shift to the correct column. This requires the observation input.
 	VLDR.32 S4, [R9] ;load the emission entry
 	VMUL.F32 S3, S3, S4 ;multiply the max value by the emission entry
 	MUL R9, R10, R7 ;jump amount for vit[:,t]
@@ -99,7 +105,7 @@ divideByScale
 	VSTR S1, [R9] ;store the value back in vit[:,t]
 	B divideByScale
 doneDivision
-	POP{R0-R12}
+	POP{R4-R12}
 	BX LR
 	ENDFUNC
 	end
