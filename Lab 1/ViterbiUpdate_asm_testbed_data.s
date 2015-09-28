@@ -8,7 +8,7 @@
 	EXPORT prior
 	EXPORT observation
 input DCD 1,2
-output DCD 1,2
+output DCD 1,2,3,4
 s DCD 1
 v DCD 1
 transition DCD 1,2,3,4

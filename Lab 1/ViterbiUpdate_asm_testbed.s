@@ -77,6 +77,10 @@ ViterbiUpdate_asm_testbed
 	;ouput array is at =output
 	;observations are at =observations 
 	LDR R0, =input ; pointer to input array
+	VLDR.F32 S0, =0.8888
+	VLDR.F32 S1, =0.1111
+	VSTR S0, [R0]
+	VSTR S1, [R0, #4]
 	LDR R1, =output ; pointer to output array
 	LDR R4, =observation
 	LDR R2, [R4] ; observation value

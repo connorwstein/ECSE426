@@ -34,7 +34,7 @@ getTransP
 	MUL R9, R4, R7 ;jump amount for vit[:,t-1]
 	ADDS R9, R0, R9 ;get address for new position in vit
 	VLDR.32 S0, [R9] ;get the value in vit[:,t-1]
-	MUL R9, R4, R8 ;jump amount for transition
+	MUL R9, R4, R8 ; jump amount for transition
 	ADDS R9, R6, R9 ;get address for new position in transition
 	MUL R11, R10, R7 ;amount needed to shift to correct column
 	ADDS R9, R11, R9 ;this shifts the address to the correct column of transition
