@@ -42,6 +42,7 @@ class HMM:
             c[t] = 1.0/np.sum(viterbi[:,t]) # scaling factor
             viterbi[:,t] = c[t] * viterbi[:,t]
             print(viterbi[:,t])
+            print(psi[:,t])
 
         # D - Back-tracking
         best_path[nSamples-1] =  viterbi[:,nSamples-1].argmax() # last state

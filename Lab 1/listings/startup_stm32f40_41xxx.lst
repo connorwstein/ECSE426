@@ -488,8 +488,7 @@ ARM Macro Assembler    Page 8
   186 0000000C F3BF 8F4F       DSB
   187 00000010 F3BF 8F6F       ISB
   188 00000014         ; Done floating point unit enable
-  189 00000014 4806            LDR              R0, =ViterbiUpdate_asm_testbed 
-                                                            ; Call the testbed 
+  189 00000014 4806            LDR              R0, =__main ; Call the testbed 
                                                                
   190 00000016 4780            BLX              R0
   191 00000018                 ENDP
@@ -518,13 +517,13 @@ K]
   210 0000001E         BusFault_Handler
                                PROC
   211 0000001E                 EXPORT           BusFault_Handler           [WEA
+K]
 
 
 
 ARM Macro Assembler    Page 9 
 
 
-K]
   212 0000001E E7FE            B                .
   213 00000020                 ENDP
   215 00000020         UsageFault_Handler
@@ -583,13 +582,13 @@ K]
    [WEAK]
   249 0000002A                 EXPORT           EXTI4_IRQHandler               
    [WEAK]
+  250 0000002A                 EXPORT           DMA1_Stream0_IRQHandler        
 
 
 
 ARM Macro Assembler    Page 10 
 
 
-  250 0000002A                 EXPORT           DMA1_Stream0_IRQHandler        
    [WEAK]
   251 0000002A                 EXPORT           DMA1_Stream1_IRQHandler        
    [WEAK]
@@ -648,13 +647,13 @@ ARM Macro Assembler    Page 10
   278 0000002A                 EXPORT           USART3_IRQHandler              
    [WEAK]
   279 0000002A                 EXPORT           EXTI15_10_IRQHandler           
+   [WEAK]
 
 
 
 ARM Macro Assembler    Page 11 
 
 
-   [WEAK]
   280 0000002A                 EXPORT           RTC_Alarm_IRQHandler           
    [WEAK]
   281 0000002A                 EXPORT           OTG_FS_WKUP_IRQHandler         
@@ -713,13 +712,13 @@ ARM Macro Assembler    Page 11
    [WEAK]
   308 0000002A                 EXPORT           DMA2_Stream6_IRQHandler        
    [WEAK]
+  309 0000002A                 EXPORT           DMA2_Stream7_IRQHandler        
 
 
 
 ARM Macro Assembler    Page 12 
 
 
-  309 0000002A                 EXPORT           DMA2_Stream7_IRQHandler        
    [WEAK]
   310 0000002A                 EXPORT           USART6_IRQHandler              
    [WEAK]
@@ -778,13 +777,13 @@ ARM Macro Assembler    Page 12
   353 0000002A         I2C1_EV_IRQHandler
   354 0000002A         I2C1_ER_IRQHandler
   355 0000002A         I2C2_EV_IRQHandler
+  356 0000002A         I2C2_ER_IRQHandler
 
 
 
 ARM Macro Assembler    Page 13 
 
 
-  356 0000002A         I2C2_ER_IRQHandler
   357 0000002A         SPI1_IRQHandler
   358 0000002A         SPI2_IRQHandler
   359 0000002A         USART1_IRQHandler
@@ -843,13 +842,13 @@ ARM Macro Assembler    Page 13
                        ************************
   412 0000002C         ; User Stack and Heap initialization
   413 0000002C         ;*******************************************************
+                       ************************
 
 
 
 ARM Macro Assembler    Page 14 
 
 
-                       ************************
   414 0000002C                 IF               :DEF:__MICROLIB
   415 0000002C         
   416 0000002C                 EXPORT           __initial_sp
@@ -1952,15 +1951,15 @@ Symbol: ViterbiUpdate_asm_testbed
    Definitions
       At line 180 in file RTE\Device\STM32F407VG\startup_stm32f40_41xxx.s
    Uses
-      At line 189 in file RTE\Device\STM32F407VG\startup_stm32f40_41xxx.s
-Comment: ViterbiUpdate_asm_testbed used once
+      None
+Comment: ViterbiUpdate_asm_testbed unused
 __main 00000000
 
 Symbol: __main
    Definitions
       At line 179 in file RTE\Device\STM32F407VG\startup_stm32f40_41xxx.s
    Uses
-      None
-Comment: __main unused
+      At line 189 in file RTE\Device\STM32F407VG\startup_stm32f40_41xxx.s
+Comment: __main used once
 2 symbols
 447 symbols in table
