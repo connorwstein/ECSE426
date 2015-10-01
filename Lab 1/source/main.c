@@ -66,6 +66,9 @@ int Viterbi_C(int *Observations, int Nobs, int *EstimatedStates, hmm_desc *hmm){
 	}	
 	for(int i = 0; i<numStates; i++)
 	{
+		if(sumOfVitInput==0){
+				return -1;
+		}
 		vitpsi[0][i] /= sumOfVitInput;
 		printf("vitInput[%d] = %f ",i,vitpsi[0][i]);
 	}
@@ -185,7 +188,9 @@ int main()
 	int EstimatedStates[20];
 	memset(EstimatedStates, 0, sizeof(EstimatedStates));
 	int vitTestArray[20] = {2,1,1,2,1,2,1,0,1,2,1,1,2,1,2,1,1,2,1,0};
-	Viterbi_C(vitTestArray, 20, EstimatedStates, &hmm1); 
+	if(Viterbi_C(vitTestArray, 20, EstimatedStates, &hmm1)==-1){
+		printf("Error in decoding\n");
+	}
 	printf("Vit path: ");
 	for(int i=0;i<20;i++){
 			if(i==19){
