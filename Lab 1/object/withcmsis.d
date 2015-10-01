@@ -1,0 +1,11 @@
+.\object\withcmsis.o: withCMSIS.c
+.\object\withcmsis.o: C:\Keil_v5\ARM\ARMCC_505u2\Bin\..\include\stdio.h
+.\object\withcmsis.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\arm_math.h
+.\object\withcmsis.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\core_cm4.h
+.\object\withcmsis.o: C:\Keil_v5\ARM\ARMCC_505u2\Bin\..\include\stdint.h
+.\object\withcmsis.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\core_cmInstr.h
+.\object\withcmsis.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\cmsis_armcc.h
+.\object\withcmsis.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\core_cmFunc.h
+.\object\withcmsis.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\core_cmSimd.h
+.\object\withcmsis.o: C:\Keil_v5\ARM\ARMCC_505u2\Bin\..\include\string.h
+.\object\withcmsis.o: C:\Keil_v5\ARM\ARMCC_505u2\Bin\..\include\math.h

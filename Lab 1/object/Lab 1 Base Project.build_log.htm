@@ -22,20 +22,18 @@ Dialog DLL:      TCM.DLL V1.14.5.0
  
 <h2>Project:</h2>
 E:\McGill5\ECSE426\Lab 1\Lab 1 Base Project.uvprojx
-Project File Date:  09/27/2015
+Project File Date:  10/01/2015
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.05 update 2 (build 169)', folder: 'C:\Keil_v5\ARM\ARMCC_505u2\Bin'
 Rebuild target 'Lab1'
 compiling fputc_debug.c...
 compiling main.c...
-source\main.c(108): warning:  #223-D: function "abs" declared implicitly
+source\main.c(114): warning:  #223-D: function "abs" declared implicitly
                 else if(reading<=abs(alpha1)){
-source\main.c(114): warning:  #111-D: statement is unreachable
+source\main.c(120): warning:  #111-D: statement is unreachable
                 return 0;
-source\main.c(210): warning:  #225-D: the format string ends before this argument
-        printf("Observations: ", actualObservations);
-source\main.c: 3 warnings, 0 errors
+source\main.c: 2 warnings, 0 errors
 assembling Quiz1_Studying.s...
 Quiz1_Studying.s(8): warning: A1581W: Added 2 bytes of padding at address 0x6
 Quiz1_Studying.s(25): warning: A1581W: Added 2 bytes of padding at address 0x3a
@@ -43,11 +41,17 @@ assembling ViterbiUpdate_asm.s...
 ViterbiUpdate_asm.s(94): warning: A1581W: Added 2 bytes of padding at address 0xf2
 assembling ViterbiUpdate_asm_testbed.s...
 assembling ViterbiUpdate_asm_testbed_data.s...
+compiling withCMSIS.c...
+withCMSIS.c(111): warning:  #223-D: function "abs" declared implicitly
+                else if(reading<=abs(alpha1)){
+withCMSIS.c(117): warning:  #111-D: statement is unreachable
+                return 0;
+withCMSIS.c: 2 warnings, 0 errors
 assembling startup_stm32f40_41xxx.s...
 compiling system_stm32f4xx.c...
 linking...
-Program Size: Code=6044 RO-data=820 RW-data=12 ZI-data=2180  
-".\object\Lab 1 Base Project.axf" - 0 Error(s), 6 Warning(s).
+Program Size: Code=3044 RO-data=812 RW-data=12 ZI-data=2180  
+".\object\Lab 1 Base Project.axf" - 0 Error(s), 7 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -79,13 +83,13 @@ Package Vendor: Keil
       Library file:  CMSIS\Lib\ARM\arm_cortexM4lf_math.lib
 
    * Component: Keil::Device:Startup:1.3.1
-      Source file:   Device\Source\ARM\STM32F4xx_OTP.s
-      Source file:   Device\Source\system_stm32f4xx.c
       Include file:  Device\Include\stm32f4xx.h
-      Source file:   Device\Source\ARM\startup_stm32f40_41xxx.s
-      Include file:  RTE_Driver\Config\RTE_Device.h
+      Source file:   Device\Source\ARM\STM32F4xx_OTP.s
       Source file:   Device\Source\ARM\STM32F40xxx_41xxx_OPT.s
-Build Time Elapsed:  00:00:01
+      Source file:   Device\Source\system_stm32f4xx.c
+      Include file:  RTE_Driver\Config\RTE_Device.h
+      Source file:   Device\Source\ARM\startup_stm32f40_41xxx.s
+Build Time Elapsed:  00:00:02
 </pre>
 </body>
 </html>

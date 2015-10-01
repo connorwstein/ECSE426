@@ -457,6 +457,11 @@
               <FileType>2</FileType>
               <FilePath>.\ViterbiUpdate_asm_testbed_data.s</FilePath>
             </File>
+            <File>
+              <FileName>withCMSIS.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\withCMSIS.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
