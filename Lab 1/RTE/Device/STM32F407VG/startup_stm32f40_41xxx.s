@@ -186,7 +186,7 @@ Reset_Handler    PROC
 				 DSB
 				 ISB
 				 ; Done floating point unit enable
-                 LDR     R0, =__main ; Call the testbed			 
+                 LDR     R0, =ViterbiUpdate_asm_testbed ; Call the testbed			 
                  BLX     R0
                  ENDP
 

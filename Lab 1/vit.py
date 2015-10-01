@@ -59,7 +59,7 @@ hmm.emission = np.array([[0.8, 0.1, 0.1], # B = emission (observation) probs. / 
                          [0.1, 0.2, 0.7]])
 
 #print("Viterbi with transistion:"+str(transition)+" priors "+str(priors)+" observations " +str(observations)+" and emission:"+str(emission))
-print hmm.viterbi([0,1,2,0,1,2])
+print hmm.viterbi([0,0,2,0,1,2])
 
 
 
