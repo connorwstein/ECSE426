@@ -35,15 +35,15 @@ bigOuterLoop
 	ADDS R0,R8; ;reset the address of vit[t-1] (this goes to the very end of the array, because the inner loops work backwards)
 	MUL R11, R10, R7 ;amount needed to shift to correct column
 	PUSH{R10} ;push the loop counter, so that R10 can be used for another purpose
-
+	MOV R10, R4
 	;This loop corresponds to: "trans_p = vit[:,t-1] * self.transition[:,s]"
 getTransP 
-	ADDS R4, #-1 ;decrement the number of states
-	CMP R4, #0 
+	ADDS R10, #-1 ;decrement the number of states
+	CMP R10, #0 
 	BLT doneTransP ;if we've reached 0, then the calculation is complete
 	
 	VLDR.32 S0,[R0,#-4]! ;load vit[t-1]
-	MUL R9, R4, R8 ; jump amount for transition
+	MUL R9, R10, R8 ; jump amount for transition
 	ADDS R9, R6 ;get address for new position in transition
 	ADDS R9, R11 ;this shifts the address to the correct column of transition
 	VLDR.32 S1, [R9] ;get the next value in transition
@@ -53,19 +53,17 @@ getTransP
 	
 	;This part gets ready for finding the maximum value in trans_p
 doneTransP 
-	LDR R4, [R3] ;reload number of states
 	VPOP{S0} ;get the most recently stored value in trans_p
 	MOV R9, #0 ;this register will increment at every loop
 	MOV R10, #0 ;this will store the index of the maximum value 
 	
 	;This part corresponds to: "max(enumerate(trans_p), key=operator.itemgetter(1))"
 getMaxValue 
-	ADDS R4,#-1 ;decrement loop counter
-	CMP R4, #0 
-	BEQ doneMaxValue ;if we've reached 0, then the calculation is complete
+	ADDS R9,#1 ;increment loop counter
+	CMP R9, R4 
+	BEQ doneMaxValue ;if we've reached S, then the calculation is complete
 	
 	VPOP{S1} ;get trans_p elements
-	ADDS R9, #1 ;increment index counter
 	VCMP.F32 S1,S0 ;compare this value with current max value
 	VMRS APSR_nzcv, FPSCR ;make flag accessible
 	BLT getMaxValue ;if the new number is less than the max, go to beginning of loop
@@ -78,11 +76,10 @@ getMaxValue
 doneMaxValue
 	VMOV S2, R10 ;move index to floating point register
 	VCVT.F32.S32 S2, S2 ;convert to "integer" in floating point
-	POP{R10}
-	
-	LDR R4, [R3,#4] ;load number of observation types
-	MUL R4, R11 ;number of observation types times state number times number of bytes
-	ADDS R9, R4, R5 ;get the address of the correct row of emission
+
+	LDR R10, [R3,#4] ;load number of observation types
+	MUL R10, R11 ;number of observation types times state number times number of bytes
+	ADDS R9, R10, R5 ;get the address of the correct row of emission
 	ADDS R9, R12 ;shift to the correct column. This requires the observation input.
 	VLDR.32 S1, [R9] ;load the emission entry
 	VMUL.F32 S0,S1 ;multiply the max value by the emission entry
@@ -91,8 +88,8 @@ doneMaxValue
 	VSTR S0, [R9] ;store the max value in vit[s,t]
 	
 	ADDS R9, R8 ;address for the correct position in psi
-	VSTR S2, [R9] ;store index in psi
-	LDR R4, [R3] ;reload the number of states
+	VSTR S2, [R9] ;store index in ps
+	POP{R10}
 	B bigOuterLoop ;go back to beginning of big loop
 	
 	;After the big loop, check if the cumulative sum is 0. If it is, exit the function and return -1.
