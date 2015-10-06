@@ -67,8 +67,16 @@ float update_temp(){
 	
 }
 uint32_t ticks;
+
 void SysTick_Handler(){
-	ticks=1;
+	if(ticks){
+		printf("Ticks 0\n");
+		ticks=0;
+	}
+	else{
+		printf("Ticks 1\n");
+		ticks=1;
+	}
 }
 
 int main(){
@@ -77,16 +85,21 @@ int main(){
 	initialize_ADC_Temp();
 	initialize_GPIO();
 	//SysTick_Config(SystemCoreClock / 50);
-	 
-	SysTick_Config(SystemCoreClock/5);
+	//Note that must at least divide by 10
+	SysTick_Config(SystemCoreClock/20); //tick every 50 ms
+	
 	while(1){
 		if(ticks){
 			//motor
 			//temp reading
 			//led control and alarm
-			
-			//printf("Tick\n");
-			ticks=0;
+				GPIO_SetBits(GPIOD, GPIO_Pin_15);
+				//printf("LED ON\n");
+				//ticks=0;
+		}
+		else{
+				//printf("LED OFF\n");
+				GPIO_ResetBits(GPIOD, GPIO_Pin_15);
 		}
 	}
 	
