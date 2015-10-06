@@ -1,6 +1,7 @@
 --cpu Cortex-M4.fp
 ".\object\main.o"
 ".\object\fputc_debug.o"
+".\object\system_init.o"
 ".\object\misc.o"
 ".\object\stm32f4xx_adc.o"
 ".\object\stm32f4xx_can.o"

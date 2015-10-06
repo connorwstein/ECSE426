@@ -1,5 +1,8 @@
 .\object\main.o: source\main.c
 .\object\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\object\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\object\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+.\object\main.o: source\system_init.h
 .\object\main.o: C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\1.0.8\Device\Include\stm32f4xx.h
 .\object\main.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\core_cm4.h
 .\object\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
