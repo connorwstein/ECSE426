@@ -3,8 +3,9 @@
 #include <string.h>
 #include "system_init.h"
 
-#define D 50
-#define E 45
+#define D 50 //size of the moving average buffer
+#define E 45 //LED alarm threshold
+#define LEDPeriod 10 //number of ticks each LED should be turned on for
 
 typedef struct{
 	float data[D];
@@ -15,7 +16,8 @@ typedef struct{
 uint32_t ticks;
 
 void move_motor(float temp){
-	int delay=((2300-900)*temp/100)+900; //values given in tutorial, we need to change them to suit our motor
+	int delay=((110000-30000)*(temp-20)/40)+30000; //these values seem to work. temp-20 is measuring the temperature from 20, since 20 is supposed to be at angle 5. 60 is at angle 175
+	//delay = 110000;
 	GPIO_SetBits(GPIOB, GPIO_Pin_1);
 	
 	for(int i=0;i<=delay;i++);
@@ -62,22 +64,22 @@ void LED_alarm(float temp, int raw_counter)
 {
 	if (temp >= E){ // If temperature is above the emergency value
 		
-	int counter = raw_counter % 40; //turn on an led for 10 ticks. 4 LEDs means the counter should reset after 4*10 = 40.
+	int counter = raw_counter % (LEDPeriod*4); //turn on an led for 10 ticks. 4 LEDs means the counter should reset after 4*10 = 40.
 		
 	 // First time
-	 if (counter<10)
+	 if (counter<LEDPeriod)
 	 {
 			GPIO_ResetBits(GPIOD, GPIO_Pin_15);
 			GPIO_SetBits(GPIOD, GPIO_Pin_12);
 	 }
 		 // After 120 msec
-	 else if(counter<20)
+	 else if(counter<LEDPeriod*2)
 	 {
 			GPIO_ResetBits(GPIOD, GPIO_Pin_12);
 			GPIO_SetBits(GPIOD, GPIO_Pin_13);
 	 }
 	 
-	 else if(counter<30)
+	 else if(counter<LEDPeriod*3)
 	 {
 			GPIO_ResetBits(GPIOD, GPIO_Pin_13);
 			GPIO_SetBits(GPIOD, GPIO_Pin_14);
