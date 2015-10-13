@@ -6,7 +6,7 @@
 #define D 50 //size of the moving average buffer
 #define E 60 //LED alarm threshold
 #define LEDPeriod 10 //number of ticks each LED should be turned on for
-#define TEST 0 
+#define TEST 0 //run update_buffer_test() if equal to 1
 typedef struct{
 	float data[D];
 	int index;
@@ -45,6 +45,9 @@ void update_buffer(float new_reading, buffer* moving_average){
 	moving_average->index++;
 }
 
+/**
+	This performs a simple test of update_buffer()
+*/
 void update_buffer_test(){
 	buffer moving_average;
 	memset(&moving_average, 0, sizeof(moving_average));
@@ -107,7 +110,9 @@ float get_temp(){
 	return (temp1*3000/4096 - 760)/2.5 + 25; //4096 is when 3V is applied, all 12 bits will be on, ADC returns what percentage of that it sees
 }
 
-
+/**
+	This interrupt handler gets called every 20 ms.
+*/
 void SysTick_Handler(){
 	ticks=1;
 }
@@ -129,7 +134,9 @@ int main(){
 			counter++;
 			temp = get_temp();
 			update_buffer(temp,&moving_average); //Add new temperature reading to the circular buffer every tick
-			printf("Temperature reading: %f, %f, %d\n", temp, moving_average.sum/D, moving_average.index);
+			//if(counter%50==0){
+				printf("Temperature reading: %f, %f, %d\n", temp, moving_average.sum/D, moving_average.index);
+			//}
 			LED_alarm(moving_average.sum/D,counter);
 			move_motor(moving_average.sum/D);
 			ticks=0;
