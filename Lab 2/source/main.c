@@ -4,9 +4,9 @@
 #include "system_init.h"
 
 #define D 50 //size of the moving average buffer
-#define E 45 //LED alarm threshold
+#define E 60 //LED alarm threshold
 #define LEDPeriod 10 //number of ticks each LED should be turned on for
-
+#define TEST 0 
 typedef struct{
 	float data[D];
 	int index;
@@ -21,11 +21,15 @@ uint32_t ticks;
 	The duty cycle is set using and empirically determined delay.
 */
 void move_motor(float temp){
-	int delay=((110000-30000)*(temp-20)/40)+30000; //these values seem to work. temp-20 is measuring the temperature from 20, since 20 is supposed to be at angle 5. 60 is at angle 175
-	
+	int delay=((103000-26000)*(temp-20)/40)+26000; //these values seem to work. temp-20 is measuring the temperature from 20, since 20 is supposed to be at angle 5. 60 is at angle 175
+	//int delay = 27000;
 	GPIO_SetBits(GPIOB, GPIO_Pin_1); //Set motor pin high
 	 
 	for(int i=0;i<=delay;i++); //Delay for a time according to the temperature reading
+	//Delay of 900us is 0 degrees
+	//Delay of 2100us is 180 degrees
+	//move_motor gets called every 20ms
+	
 	
 	GPIO_ResetBits(GPIOB, GPIO_Pin_1); //Set motor pin low
 }
@@ -49,11 +53,11 @@ void update_buffer_test(){
 	for(int i=0;i<listSize;i++){
 		update_buffer((float)i,&moving_average);
 		
-		for(int j=0;i<D;i++){
+		for(int j=0;j<D;j++){
 			printf("%f ", moving_average.data[j]);
 		}
 		
-		printf("\n");	
+		printf("%f %f \n", moving_average.sum, moving_average.sum/D);	
 	}
 }
 
@@ -109,6 +113,9 @@ void SysTick_Handler(){
 }
 
 int main(){
+	#if TEST
+	update_buffer_test();
+	#endif
 	ticks=0;
 	initialize_ADC_Temp();
 	initialize_GPIO();	
@@ -116,11 +123,13 @@ int main(){
 	buffer moving_average;
 	memset(&moving_average, 0, sizeof(moving_average));
 	int counter = 0; //Every LEDPeriod ticks, the LED that is ON will change, use this counter to make that happen
+	float temp;
 	while(1){
 		if(ticks){
 			counter++;
-			update_buffer(get_temp(),&moving_average); //Add new temperature reading to the circular buffer every tick
-			printf("Temperature reading: %f, %f, %d\n", get_temp(), moving_average.sum/D, moving_average.index);
+			temp = get_temp();
+			update_buffer(temp,&moving_average); //Add new temperature reading to the circular buffer every tick
+			printf("Temperature reading: %f, %f, %d\n", temp, moving_average.sum/D, moving_average.index);
 			LED_alarm(moving_average.sum/D,counter);
 			move_motor(moving_average.sum/D);
 			ticks=0;
