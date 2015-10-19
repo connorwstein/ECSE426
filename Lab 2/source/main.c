@@ -22,14 +22,9 @@ uint32_t ticks;
 */
 void move_motor(float temp){
 	int delay=((103000-26000)*(temp-20)/40)+26000; //these values seem to work. temp-20 is measuring the temperature from 20, since 20 is supposed to be at angle 5. 60 is at angle 175
-	//int delay = 27000;
 	GPIO_SetBits(GPIOB, GPIO_Pin_1); //Set motor pin high
 	 
 	for(int i=0;i<=delay;i++); //Delay for a time according to the temperature reading
-	//Delay of 900us is 0 degrees
-	//Delay of 2100us is 180 degrees
-	//move_motor gets called every 20ms
-	
 	
 	GPIO_ResetBits(GPIOB, GPIO_Pin_1); //Set motor pin low
 }
@@ -60,8 +55,17 @@ void update_buffer_test(){
 			printf("%f ", moving_average.data[j]);
 		}
 		
-		printf("%f %f \n", moving_average.sum, moving_average.sum/D);	
+		printf("%f \n", moving_average.sum/D);	
 	}
+	
+	memset(&moving_average, 0, sizeof(moving_average));
+	
+	for(float i=0;i<listSize;i++){
+		update_buffer(i*i*(i/(i+1)),&moving_average);
+		
+		printf("%f \n", moving_average.sum/D);	
+	}
+	
 }
 
 /**
@@ -134,9 +138,9 @@ int main(){
 			counter++;
 			temp = get_temp();
 			update_buffer(temp,&moving_average); //Add new temperature reading to the circular buffer every tick
-			//if(counter%50==0){
+			if(counter%50==0){
 				printf("Temperature reading: %f, %f, %d\n", temp, moving_average.sum/D, moving_average.index);
-			//}
+			}
 			LED_alarm(moving_average.sum/D,counter);
 			move_motor(moving_average.sum/D);
 			ticks=0;
