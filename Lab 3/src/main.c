@@ -10,11 +10,7 @@
 
 uint8_t ticks = 0;
 
-void SysTick_Handler(){
-	ticks=1;
-}
-int main(){
-
+void init_accelerometer(void){
 	LIS302DL_InitTypeDef init;
 	init.Power_Mode = LIS302DL_LOWPOWERMODE_ACTIVE; //Set to low power mode
 	init.Output_DataRate = LIS302DL_DATARATE_100; //Set data rate to 100Hz
@@ -23,12 +19,22 @@ int main(){
 	init.Self_Test = LIS302DL_SELFTEST_NORMAL; //Not sure what the self test means, but leave as normal
 	
 	LIS302DL_Init(&init);
-	//char *status_reg = LIS302DL_STATUS_REG_ADDR;
+}
+
+void SysTick_Handler(){
+	ticks=1;
+}
+
+int main(){
+
+	init_accelerometer();
+	SysTick_Config(SystemCoreClock/POLL_RATE); //tick every 20 ms //Input value must be less than 24 bits
+	
+	//Set up reading buffers
 	uint8_t status_reg_buffer[1];
 	memset(status_reg_buffer, 0, sizeof(status_reg_buffer));
 	uint8_t accelerometer_data_buffer[3];
 	memset(accelerometer_data_buffer, 0, sizeof(accelerometer_data_buffer));
-	SysTick_Config(SystemCoreClock/POLL_RATE); //tick every 20 ms //Input value must be less than 24 bits
 	
 	while(1){
 		if(ticks){
@@ -39,8 +45,8 @@ int main(){
 				LIS302DL_Read(accelerometer_data_buffer+1, LIS302DL_OUT_Y_ADDR, 1);
 				LIS302DL_Read(accelerometer_data_buffer+2, LIS302DL_OUT_Z_ADDR, 1);
 				printf("X: %d Y: %d Z: %d\n", accelerometer_data_buffer[0],accelerometer_data_buffer[1],accelerometer_data_buffer[2]);
-				
 			}
+			ticks = 0;
 		}
 	}	
 	
