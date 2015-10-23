@@ -1,31 +1,16 @@
-#include <stdio.h>
-#include <string.h>
 #include "stm32f4xx.h"                  // Device header
 #include "stm32f4xx_conf.h"
-#include "lis302dl.h"
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_rcc.h"
 
+#include <stdio.h>
 #include "accelerometer.h"
+#include "7_segment.h"
 
 #define CHECK_BIT(var,pos) (((var) & (1<<(pos)))>>(pos))
 
 uint8_t ticks = 0;
 
-void init_accelerometer(void){
-	//General Configuration
-	LIS302DL_InitTypeDef init;
-	init.Power_Mode = LIS302DL_LOWPOWERMODE_ACTIVE; //Set to low power mode
-	init.Output_DataRate = LIS302DL_DATARATE_100; //Set data rate to 100Hz
-	init.Axes_Enable = LIS302DL_XYZ_ENABLE; //Enable all axes
-	init.Full_Scale = LIS302DL_FULLSCALE_2_3; //Use full scale range of 2 g
-	init.Self_Test = LIS302DL_SELFTEST_NORMAL; //Not sure what the self test means, but leave as normal
-	LIS302DL_Init(&init);
-	
-	
-	//Interrupt configuration
-	uint8_t data_ready = 4;
-	LIS302DL_Write(&data_ready, LIS302DL_CTRL_REG3_ADDR, 1);
-
-}
 void init_interrupts(void){
 		GPIO_InitTypeDef GPIO_InitStruct;
     EXTI_InitTypeDef EXTI_InitStruct;
@@ -82,20 +67,24 @@ void EXTI0_IRQHandler(void){
 			//printf("Averaged Values %f %f %f\n", get_average_Ax1(),get_average_Ay1(), get_average_Az1()); 
 			printf("Angles: roll %f pitch %f yaw %f\n", calculate_roll_angle(), calculate_pitch_angle(), calculate_yaw_angle());
 	}
-	
 }
+
+
 int main(){
 
+	//PE0 is used for accel interrupt
+	init_7_segment();
+	test_7_segment(); //Test before the interrupts turn on
 	
 	init_accelerometer();
-	//SysTick_Config(SystemCoreClock/POLL_RATE); //tick every 20 ms //Input value must be less than 24 bits
-	printf("Accel init\n");
 	init_interrupts();
-	printf("Interrupts init\n");
 	init_calibration();
 	EXTI_GenerateSWInterrupt(EXTI_Line0); //start the reading
+	//SysTick_Config(SystemCoreClock/50);  //every 20 ms
+	
+	
 	while(1){
-		
+
 	}
 	
 	return 0;

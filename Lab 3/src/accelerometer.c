@@ -4,6 +4,7 @@
 #include "stm32f4xx_conf.h"
 #include "math.h"
 
+
 #include "accelerometer.h"
 
 #define NUM_MG_PER_G 1000
@@ -89,4 +90,19 @@ void init_calibration(void){
 	memset(&Ax1_moving_average, 0, sizeof(Ax1_moving_average));
 	memset(&Ay1_moving_average, 0, sizeof(Ay1_moving_average));
 	memset(&Az1_moving_average, 0, sizeof(Az1_moving_average));
+}
+
+void init_accelerometer(void){
+	//General Configuration
+	LIS302DL_InitTypeDef init;
+	init.Power_Mode = LIS302DL_LOWPOWERMODE_ACTIVE; //Set to low power mode
+	init.Output_DataRate = LIS302DL_DATARATE_100; //Set data rate to 100Hz
+	init.Axes_Enable = LIS302DL_XYZ_ENABLE; //Enable all axes
+	init.Full_Scale = LIS302DL_FULLSCALE_2_3; //Use full scale range of 2 g
+	init.Self_Test = LIS302DL_SELFTEST_NORMAL; //Not sure what the self test means, but leave as normal
+	LIS302DL_Init(&init);
+	
+	//Interrupt configuration
+	uint8_t data_ready = 4;
+	LIS302DL_Write(&data_ready, LIS302DL_CTRL_REG3_ADDR, 1);
 }
