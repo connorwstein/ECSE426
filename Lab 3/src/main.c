@@ -69,22 +69,31 @@ void EXTI0_IRQHandler(void){
 	}
 }
 
+void SysTick_Handler(){
+	ticks = 1;
+}
 
 int main(){
 
 	//PE0 is used for accel interrupt
 	init_7_segment();
-	test_7_segment(); //Test before the interrupts turn on
+//	test_7_segment(); //Test before the interrupts turn on
+	SysTick_Config(SystemCoreClock/50);
+	double test1 = 112.120938, test2 = 75.679, test3 = 1.2348;
+	draw_number(test1);
+//	draw_number(test2);
+//	draw_number(test3);
 	
-	init_accelerometer();
-	init_interrupts();
-	init_calibration();
-	EXTI_GenerateSWInterrupt(EXTI_Line0); //start the reading
-	//SysTick_Config(SystemCoreClock/50);  //every 20 ms
+//	init_accelerometer();
+//	init_interrupts();
+//	init_calibration();
+//	EXTI_GenerateSWInterrupt(EXTI_Line0); //start the reading
 	
 	
 	while(1){
-
+		if(ticks){
+			refresh_7_segment();
+		}
 	}
 	
 	return 0;
