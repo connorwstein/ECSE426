@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "accelerometer.h"
 #include "7_segment.h"
+#include "keypad.h"
 
 #define CHECK_BIT(var,pos) (((var) & (1<<(pos)))>>(pos))
 
@@ -69,10 +70,6 @@ void EXTI0_IRQHandler(void){
 	}
 }
 
-void SysTick_Handler(){
-	ticks = 1;
-}
-
 void init_TIM3(void){
 	//Enable the peripheral clock
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
@@ -110,8 +107,8 @@ void TIM3_IRQHandler(void)
 	{
 		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
 		//Refresh 7 segment
-		//printf("Refresh 7 segment\n");
-		refresh_7_segment();
+		//refresh_7_segment();
+		detect_key_pressed();
 	}
 }
 
@@ -120,8 +117,9 @@ int main(){
 	//PE0 is used for accel interrupt
 	init_7_segment();
 //	test_7_segment(); //Test before the interrupts turn on
+	init_keypad();
 	init_TIM3();
-	//SysTick_Config(SystemCoreClock/50);
+	
 	double test1 = 112.120938, test2 = 75.679, test3 = 1.2348;
 //	draw_number(test1);
 //	draw_number(test2);

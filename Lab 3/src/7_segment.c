@@ -20,7 +20,7 @@ void init_7_segment(void){
 	//7 segment pins 1-15: PC1 - PC15  PC0 = pin 16
 	init_gpio(GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | 
 	GPIO_Pin_7 | GPIO_Pin_8 |GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | 
-	GPIO_Pin_15 | GPIO_Pin_0, RCC_AHB1Periph_GPIOC, GPIOC, 0);
+	GPIO_Pin_15 | GPIO_Pin_0, RCC_AHB1Periph_GPIOC, GPIOC, 0, 0);
 
 }
 void draw_digit(uint8_t num){
