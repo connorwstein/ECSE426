@@ -73,14 +73,57 @@ void SysTick_Handler(){
 	ticks = 1;
 }
 
+void init_TIM3(void){
+	//Enable the peripheral clock
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+
+	TIM_TimeBaseInitTypeDef init;
+	//Desired rate = ClockFrequency /(prescaler * period)
+	//Clock frequency is 168MHz Period and prescaler are in the range [0x0000, 0xFFFF]
+	// For 1000Hz interrupt rate (100Hz was too slow), let Prescaler be 1000 and the period be 168
+	init.TIM_Prescaler = 1000;
+	init.TIM_CounterMode = TIM_CounterMode_Up;
+	init.TIM_Period =  168; 
+	init.TIM_ClockDivision = TIM_CKD_DIV1; 
+	//Initialize Timer 3
+	TIM_TimeBaseInit(TIM3, &init); 
+	
+	//Add to interrupt routine to the NVIC
+	NVIC_InitTypeDef nvic;	
+	nvic.NVIC_IRQChannel = TIM3_IRQn; 
+	nvic.NVIC_IRQChannelCmd = ENABLE; 
+	nvic.NVIC_IRQChannelPreemptionPriority = 0x00; 
+	nvic.NVIC_IRQChannelSubPriority = 0x00; 
+	
+	NVIC_Init(&nvic); 
+	//Link interrupt and Timer
+	TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE); 
+	//Start Timer
+	TIM_Cmd(TIM3, ENABLE); 
+	
+}
+
+
+void TIM3_IRQHandler(void)
+{
+	if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
+	{
+		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+		//Refresh 7 segment
+		//printf("Refresh 7 segment\n");
+		refresh_7_segment();
+	}
+}
+
 int main(){
 
 	//PE0 is used for accel interrupt
 	init_7_segment();
 //	test_7_segment(); //Test before the interrupts turn on
-	SysTick_Config(SystemCoreClock/50);
+	init_TIM3();
+	//SysTick_Config(SystemCoreClock/50);
 	double test1 = 112.120938, test2 = 75.679, test3 = 1.2348;
-	draw_number(test1);
+//	draw_number(test1);
 //	draw_number(test2);
 //	draw_number(test3);
 	
@@ -91,9 +134,6 @@ int main(){
 	
 	
 	while(1){
-		if(ticks){
-			refresh_7_segment();
-		}
 	}
 	
 	return 0;

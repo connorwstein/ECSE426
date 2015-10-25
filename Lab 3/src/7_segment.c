@@ -13,19 +13,18 @@
 #define DP GPIO_Pin_7
 
 uint8_t current_digit = 0;
-uint32_t digits[4];
+int32_t digits[] = {-1,-1,-1,-1};
+int8_t decimals[] ={-1,-1,-1,-1};
 
 void init_7_segment(void){
 	//7 segment pins 1-15: PC1 - PC15  PC0 = pin 16
 	init_gpio(GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | 
 	GPIO_Pin_7 | GPIO_Pin_8 |GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | 
 	GPIO_Pin_15 | GPIO_Pin_0, RCC_AHB1Periph_GPIOC, GPIOC, 0);
-	digits[0] = -1;
-	digits[1] = -1;
-	digits[2] = -1;
-	digits[3] = -1;
+
 }
 void draw_digit(uint8_t num){
+
 	switch(num){
 			case 0:
 				//0 = ABCDEF
@@ -103,17 +102,44 @@ void select_digit(int8_t digit){
 }
 void clear_digits(void){
 	GPIO_SetBits(GPIOC, GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_6 | GPIO_Pin_8);
+	digits[0] = -1;
+	digits[1] = -1;
+	digits[2] = -1;
+}
+void draw_decimal(void){
+	GPIO_SetBits(GPIOC, DP); 
+}
+void clear_decimal(void){
+	GPIO_ResetBits(GPIOC, DP);
+	decimals[0] = -1;
+	decimals[1] = -1;
+}
+void draw_degree(void){
+	//Select degree
+  GPIO_ResetBits(GPIOC, GPIO_Pin_10);
+	//Enable
+	GPIO_SetBits(GPIOC, GPIO_Pin_9);
 }
 void refresh_7_segment(void){
 	current_digit = (++current_digit)%4;
 	printf("Current digit %d\n", current_digit);
 	if(digits[current_digit]!=-1){
-		select_digit((4-current_digit));
+		select_digit(3-current_digit);
 		draw_digit(digits[current_digit]);
+		draw_degree();
+		if(decimals[current_digit]!=-1){
+			printf("Decimal draw\n");
+			draw_decimal();
+		}
+		else{
+			clear_decimal();
+		}
 	}
 }
 
 void draw_number(double num){
+	clear_digits();
+	clear_decimal();
 	uint32_t num_int;
 	if(num > 99.95){
 		num_int = (uint32_t) num; //No decimal point
@@ -121,10 +147,12 @@ void draw_number(double num){
 	else if(num > 9.95 && num < 99.95){
 		num_int = (uint32_t)(num*10); 
 		//Need first decimal point from the right
+		decimals[1] = 1;
 	}
 	else if(num < 9.95){
 		num_int = (uint32_t)(num*100);
 		//Need second decimal point from the right
+		decimals[2] = 1;
 	}
 	else{
 		printf("Error: tried to draw invalid number\n");
