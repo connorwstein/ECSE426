@@ -7,40 +7,62 @@
 /**
 	Sets the columns as inputs
 */
+
+
+//Pin0 PB15 column1
+//Pin1 PD8 colum2
+//Pin2 PD9 c3
+//Pin3 PD10 c4
+//Pin4 PD11 r1
+//Pin5 PD12 r2
+//Pin6 PD13 r3
+//Pin7 PD14 r4
+
+
+//Pin0 PE7 column1
+//Pin1 PE8 colum2
+//Pin2 PE9 c3
+//Pin3 PE10 c4
+//Pin4 PE11 r1
+//Pin5 PE12 r2
+//Pin6 PE13 r3
+//Pin7 PE14 r4
+
+
 void init_columns(){
 	//Keypad pins are in bank A 0-7 
 	//columns are in 0-3 rows 4-7
-	init_gpio(GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3, RCC_AHB1Periph_GPIOA, GPIOA, 1, 1);
+	init_gpio(GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10, RCC_AHB1Periph_GPIOE, GPIOE, 1, 1);
 	//Set the rows to no pull output
-	init_gpio(GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7, RCC_AHB1Periph_GPIOA, GPIOA, 0, 0);
+	init_gpio(GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14, RCC_AHB1Periph_GPIOE, GPIOE, 0, 0);
 	//Set output rows to logic 0
-	GPIO_ResetBits(GPIOA, GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14);
 }
 /**
 	Sets the rows as inputs
 */
 void init_rows(){
 	//Set the rows to input
-	init_gpio(GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7, RCC_AHB1Periph_GPIOA, GPIOA, 1, 1);
+	init_gpio(GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14, RCC_AHB1Periph_GPIOE, GPIOE, 1, 1);
 	//Set the rows to no pull output
-	init_gpio(GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3, RCC_AHB1Periph_GPIOA, GPIOA, 0, 0);
+	init_gpio(GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10, RCC_AHB1Periph_GPIOE, GPIOE, 0, 0);
 	//Set output rows to logic 0
-	GPIO_ResetBits(GPIOA, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10);
 }
 /**
 	Returns an integer representing which row is pressed
 */
 uint8_t check_rows(void){
-	if(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_4)){
+	if(!GPIO_ReadInputDataBit(GPIOE, GPIO_Pin_11)){
 		return 1;
 	}
-	if(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_5)){
+	if(!GPIO_ReadInputDataBit(GPIOE, GPIO_Pin_12)){
 		return 2;
 	}
-	if(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_6)){
+	if(!GPIO_ReadInputDataBit(GPIOE, GPIO_Pin_13)){
 		return 3;
 	}
-	if(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_7)){
+	if(!GPIO_ReadInputDataBit(GPIOE, GPIO_Pin_14)){
 		return 4;
 	}
 	else{
@@ -52,16 +74,16 @@ uint8_t check_rows(void){
 */
 uint8_t check_columns(void){
 	// Active LOW
-	if(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0)){
+	if(!GPIO_ReadInputDataBit(GPIOE, GPIO_Pin_7)){
 		return 1;
 	}
-	if(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_1)){
+	if(!GPIO_ReadInputDataBit(GPIOE, GPIO_Pin_8)){
 		return 2;
 	}
-	if(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_2)){
+	if(!GPIO_ReadInputDataBit(GPIOE, GPIO_Pin_9)){
 		return 3;
 	}
-	if(!GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_3)){
+	if(!GPIO_ReadInputDataBit(GPIOE, GPIO_Pin_10)){
 		return 4;
 	}
 	else{

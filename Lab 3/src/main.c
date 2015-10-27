@@ -22,6 +22,7 @@ float angleOfBoard;
 int8_t currentKey;
 int8_t previousKey;
 int digitHasBeenEntered;
+int32_t accelerometer_out[3];
 
 uint8_t ticks = 0;
 
@@ -60,12 +61,12 @@ void init_interrupts(void){
     /* Add IRQ vector to NVIC */
     /* PD0 is connected to EXTI_Line0, which has EXTI0_IRQn vector */
     NVIC_InitStruct.NVIC_IRQChannel = EXTI0_IRQn;
+		/* Enable interrupt */
+    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
     /* Set priority */
     NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 0x00;
     /* Set sub priority */
     NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0x00;
-    /* Enable interrupt */
-    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
     /* Add to NVIC */
     NVIC_Init(&NVIC_InitStruct);
 }
@@ -74,18 +75,8 @@ void EXTI0_IRQHandler(void){
 	
 	if(EXTI_GetITStatus(EXTI_Line0) != RESET){
 			EXTI_ClearITPendingBit(EXTI_Line0);
-			int32_t out[3];
-			LIS302DL_ReadACC(out);
-			//printf("%d %d %d\n", out[0],out[1],out[2]);
-			update_moving_average(out[0], out[1], out[2]);
-			//printf("Averaged Values %f %f %f\n", get_average_Ax1(),get_average_Ay1(), get_average_Az1()); 
-			//printf("Angles: roll %f pitch %f yaw %f\n", calculate_roll_angle(), calculate_pitch_angle(), calculate_yaw_angle());
-			if(USE_ROLL==1){
-				angleOfBoard = fabs(calculate_roll_angle());
-			}
-			else{
-				angleOfBoard = fabs(calculate_pitch_angle());
-			}
+			LIS302DL_ReadACC(accelerometer_out);
+			update_moving_average(accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]);
 	}
 }
 
@@ -166,15 +157,24 @@ int main(){
 	
 	//PE0 is used for accel interrupt
 	init_7_segment();
-//	test_7_segment(); //Test before the interrupts turn on
-	
 	init_TIM3();
 	double test1 = 112.120938, test2 = 75.679, test3 = 1.2348;
 	
+	int counter = 0;
 
-	
 	while(1){
-	
+		
+		if(USE_ROLL==1){
+			angleOfBoard = fabs(calculate_roll_angle());
+		}
+		else{
+			angleOfBoard = fabs(calculate_pitch_angle());
+		}
+		if(counter%10000==0){
+			printf("Angles: roll %f pitch %f yaw %f\n", calculate_roll_angle(), calculate_pitch_angle(), calculate_yaw_angle());
+		}
+		counter++;
+		
 		if(currentKey!=previousKey){
 			//printf("KEY PRESS %d\n",currentKey);
 			previousKey = currentKey;
@@ -192,7 +192,6 @@ int main(){
 			}
 			else{
 				printf("angle of board %f\n", angleOfBoard);
-				//printf("Angles: roll %f pitch %f yaw %f\n", calculate_roll_angle(), calculate_pitch_angle(), calculate_yaw_angle());
 				numberOfGuessesMade++;
 				if(getUserGuess() < (angleOfBoard - 4)){
 					GPIO_SetBits(GPIOD, GPIO_Pin_15);
