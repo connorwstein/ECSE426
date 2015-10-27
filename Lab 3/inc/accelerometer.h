@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "lis302dl.h"
+#include "math.h"
 
 float calculate_pitch_angle(void);
 float calculate_roll_angle(void);

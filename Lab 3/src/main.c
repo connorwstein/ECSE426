@@ -10,6 +10,19 @@
 
 #define CHECK_BIT(var,pos) (((var) & (1<<(pos)))>>(pos))
 
+#define USE_ROLL 1
+#define MAX_GUESSES 3
+#define ENTER_BUTTON 15
+#define SIZE_OF_USER_GUESS 3
+
+int userGuess[3];
+int numberOfDigitsEntered;
+int numberOfGuessesMade;
+float angleOfBoard;
+int8_t currentKey;
+int8_t previousKey;
+int digitHasBeenEntered;
+
 uint8_t ticks = 0;
 
 void init_interrupts(void){
@@ -66,7 +79,13 @@ void EXTI0_IRQHandler(void){
 			//printf("%d %d %d\n", out[0],out[1],out[2]);
 			update_moving_average(out[0], out[1], out[2]);
 			//printf("Averaged Values %f %f %f\n", get_average_Ax1(),get_average_Ay1(), get_average_Az1()); 
-			printf("Angles: roll %f pitch %f yaw %f\n", calculate_roll_angle(), calculate_pitch_angle(), calculate_yaw_angle());
+			//printf("Angles: roll %f pitch %f yaw %f\n", calculate_roll_angle(), calculate_pitch_angle(), calculate_yaw_angle());
+			if(USE_ROLL==1){
+				angleOfBoard = fabs(calculate_roll_angle());
+			}
+			else{
+				angleOfBoard = fabs(calculate_pitch_angle());
+			}
 	}
 }
 
@@ -100,6 +119,19 @@ void init_TIM3(void){
 	
 }
 
+int getUserGuess(){
+	int output = 0;
+	for(int i=0; i<numberOfDigitsEntered; i++){
+		output += userGuess[i]*pow(10,numberOfDigitsEntered-1-i);
+	}
+	return output;
+}
+
+int setUserGuess(int value){
+	for(int i=0; i<SIZE_OF_USER_GUESS; i++){
+		userGuess[i] = value;
+	}
+}
 
 void TIM3_IRQHandler(void)
 {
@@ -107,34 +139,79 @@ void TIM3_IRQHandler(void)
 	{
 		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
 		//Refresh 7 segment
-		//refresh_7_segment();
-	
-		int8_t key = detect_key_pressed();
-		if(key != NO_KEY_PRESSED){
-			printf("KEY PRESS %d\n",key);
-		}
+		refresh_7_segment();
+		currentKey = detect_key_pressed();
 	}
 }
 
+
+
 int main(){
 
+	setUserGuess(0);
+	numberOfDigitsEntered = 0;
+	numberOfGuessesMade = 0;
+	angleOfBoard = 0;
+	digitHasBeenEntered = 0;
+	previousKey = NO_KEY_PRESSED;
+	currentKey = NO_KEY_PRESSED;
+	
+	
+	init_accelerometer();
+	init_interrupts();
+	init_calibration();
+	EXTI_GenerateSWInterrupt(EXTI_Line0); //start the reading
+	
+	init_gpio(GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15, RCC_AHB1Periph_GPIOD, GPIOD, 0, 0);
+	
 	//PE0 is used for accel interrupt
 	init_7_segment();
 //	test_7_segment(); //Test before the interrupts turn on
 	
 	init_TIM3();
 	double test1 = 112.120938, test2 = 75.679, test3 = 1.2348;
-//	draw_number(test1);
-//	draw_number(test2);
-//	draw_number(test3);
 	
-//	init_accelerometer();
-//	init_interrupts();
-//	init_calibration();
-//	EXTI_GenerateSWInterrupt(EXTI_Line0); //start the reading
-	
+
 	
 	while(1){
+	
+		if(currentKey!=previousKey){
+			//printf("KEY PRESS %d\n",currentKey);
+			previousKey = currentKey;
+			digitHasBeenEntered = 1;
+		}
+		else{
+			digitHasBeenEntered = 0;
+		}
+		
+		
+		if(digitHasBeenEntered==1 && currentKey != NO_KEY_PRESSED && numberOfGuessesMade<MAX_GUESSES){
+			if(currentKey != ENTER_BUTTON && numberOfDigitsEntered<SIZE_OF_USER_GUESS){
+				userGuess[numberOfDigitsEntered++] = currentKey;
+				draw_number(getUserGuess());
+			}
+			else{
+				printf("angle of board %f\n", angleOfBoard);
+				//printf("Angles: roll %f pitch %f yaw %f\n", calculate_roll_angle(), calculate_pitch_angle(), calculate_yaw_angle());
+				numberOfGuessesMade++;
+				if(getUserGuess() < (angleOfBoard - 4)){
+					GPIO_SetBits(GPIOD, GPIO_Pin_15);
+					GPIO_ResetBits(GPIOD,GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14);
+				}
+				else if(getUserGuess() > (angleOfBoard + 4)){
+					GPIO_SetBits(GPIOD, GPIO_Pin_13);
+					GPIO_ResetBits(GPIOD,GPIO_Pin_12 | GPIO_Pin_14 | GPIO_Pin_15);
+				}
+				else{
+					numberOfGuessesMade = 0;
+					draw_number(angleOfBoard);
+					GPIO_SetBits(GPIOD, GPIO_Pin_12);
+					GPIO_ResetBits(GPIOD,GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
+				}
+				numberOfDigitsEntered = 0;
+				setUserGuess(0);
+			}
+		}
 	}
 	
 	return 0;

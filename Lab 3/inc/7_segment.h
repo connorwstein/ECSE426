@@ -1,5 +1,7 @@
-#ifndef __ACCELEROMETER_H
-#define __ACCELEROMETER_H
+#ifndef __7_SEGMENT_H
+#define __7_SEGMENT_H
+
+#include "gpio.h"
 
 void init_7_segment(void);
 void test_7_segment(void);

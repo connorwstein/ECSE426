@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "gpio.h"
+
 #include "7_segment.h"
 
 #define A GPIO_Pin_14
@@ -109,10 +109,15 @@ void clear_digits(void){
 void draw_decimal(void){
 	GPIO_SetBits(GPIOC, DP); 
 }
-void clear_decimal(void){
+void decimal_off(void){
 	GPIO_ResetBits(GPIOC, DP);
+
+}
+void reset_decimal(void){
 	decimals[0] = -1;
 	decimals[1] = -1;
+	decimals[2] = -1;
+	
 }
 void draw_degree(void){
 	//Select degree
@@ -122,24 +127,24 @@ void draw_degree(void){
 }
 void refresh_7_segment(void){
 	current_digit = (++current_digit)%4;
-	printf("Current digit %d\n", current_digit);
+	//printf("Current digit %d\n", current_digit);
 	if(digits[current_digit]!=-1){
 		select_digit(3-current_digit);
 		draw_digit(digits[current_digit]);
 		draw_degree();
 		if(decimals[current_digit]!=-1){
-			printf("Decimal draw\n");
+			//printf("Decimal draw\n");
 			draw_decimal();
 		}
 		else{
-			clear_decimal();
+			decimal_off();
 		}
 	}
 }
 
 void draw_number(double num){
 	clear_digits();
-	clear_decimal();
+	reset_decimal();
 	uint32_t num_int;
 	if(num > 99.95){
 		num_int = (uint32_t) num; //No decimal point
