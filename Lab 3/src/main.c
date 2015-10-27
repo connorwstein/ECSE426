@@ -108,7 +108,11 @@ void TIM3_IRQHandler(void)
 		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
 		//Refresh 7 segment
 		//refresh_7_segment();
-		detect_key_pressed();
+	
+		int8_t key = detect_key_pressed();
+		if(key != NO_KEY_PRESSED){
+			printf("KEY PRESS %d\n",key);
+		}
 	}
 }
 
@@ -117,9 +121,8 @@ int main(){
 	//PE0 is used for accel interrupt
 	init_7_segment();
 //	test_7_segment(); //Test before the interrupts turn on
-	init_keypad();
-	init_TIM3();
 	
+	init_TIM3();
 	double test1 = 112.120938, test2 = 75.679, test3 = 1.2348;
 //	draw_number(test1);
 //	draw_number(test2);
