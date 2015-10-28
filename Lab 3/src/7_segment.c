@@ -128,10 +128,17 @@ void draw_degree(void){
 void refresh_7_segment(void){
 	current_digit = (++current_digit)%4;
 	//printf("Current digit %d\n", current_digit);
+	
 	if(digits[current_digit]!=-1){
 		select_digit(3-current_digit);
 		draw_digit(digits[current_digit]);
-		draw_degree();
+		if(digits[0]==0 && digits[1]==0 && digits[2]==0){
+			GPIO_ResetBits(GPIOC, GPIO_Pin_10);
+			GPIO_ResetBits(GPIOC, GPIO_Pin_9);
+		}
+		else{
+			draw_degree();
+		}
 		if(decimals[current_digit]!=-1){
 			//printf("Decimal draw\n");
 			draw_decimal();
@@ -146,7 +153,13 @@ void draw_number(double num){
 	clear_digits();
 	reset_decimal();
 	uint32_t num_int;
-	if(num > 99.95){
+	if(num==-1){
+		digits[0] = 0;
+		digits[1] = 0;
+		digits[2] = 0;
+		return;
+	}
+	else if(num > 99.95){
 		num_int = (uint32_t) num; //No decimal point
 	}
 	else if(num > 9.95 && num < 99.95){

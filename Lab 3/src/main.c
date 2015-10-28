@@ -23,6 +23,7 @@ int8_t currentKey;
 int8_t previousKey;
 int digitHasBeenEntered;
 int32_t accelerometer_out[3];
+int success;
 
 uint8_t ticks = 0;
 
@@ -144,6 +145,7 @@ int main(){
 	numberOfGuessesMade = 0;
 	angleOfBoard = 0;
 	digitHasBeenEntered = 0;
+	success = 0;
 	previousKey = NO_KEY_PRESSED;
 	currentKey = NO_KEY_PRESSED;
 	
@@ -202,7 +204,8 @@ int main(){
 					GPIO_ResetBits(GPIOD,GPIO_Pin_12 | GPIO_Pin_14 | GPIO_Pin_15);
 				}
 				else{
-					numberOfGuessesMade = 0;
+					numberOfGuessesMade = MAX_GUESSES;
+					success = 1;
 					draw_number(angleOfBoard);
 					GPIO_SetBits(GPIOD, GPIO_Pin_12);
 					GPIO_ResetBits(GPIOD,GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
@@ -210,6 +213,11 @@ int main(){
 				numberOfDigitsEntered = 0;
 				setUserGuess(0);
 			}
+		}
+		
+		if(numberOfGuessesMade==MAX_GUESSES && success==0){
+			draw_number(-1);
+			success = 1;
 		}
 	}
 	
