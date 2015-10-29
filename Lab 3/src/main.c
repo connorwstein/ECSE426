@@ -7,7 +7,7 @@
   * @brief   Main implementation of ECSE 426 Lab 3 McGill University, guessing game of angle of board
 	using accelerometer, 7 segment display and 4x4 keypad
   ****************************************************************************** 
-  */
+*/
 
 #include "stm32f4xx.h"                  
 #include "stm32f4xx_conf.h"
@@ -226,7 +226,7 @@ int main(){
 		
 		if(number_guesses_made == MAX_GUESSES && success == 0){
 			// Failed to guess the correct digit, draw an error code on the 7 segment display
-			draw_number(-1);
+			draw_number(USER_FAIL);
 			success = 1;
 		}
 	}

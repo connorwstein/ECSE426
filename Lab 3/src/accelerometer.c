@@ -1,9 +1,16 @@
+/**
+  ******************************************************************************
+  * @file    accelerometer.c
+  * @author  Connor Stein (connor.stein@mail.mcgill.ca) & Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca)
+  * @version V1.0.0
+  * @date    10-28-2015
+  * @brief   Handles the buffering of accelerometer data and angle calculations
+  ****************************************************************************** 
+*/
 #include <stdio.h>
 #include <string.h>
 #include "stm32f4xx.h"                  // Device header
 #include "stm32f4xx_conf.h"
-
-
 
 #include "accelerometer.h"
 
@@ -36,6 +43,9 @@ buffer Ax1_moving_average;
 buffer Ay1_moving_average;
 buffer Az1_moving_average;
 
+/**
+	@brief Add a new reading to the buffer specified in the parameters in a circular fashion
+*/
 void update_buffer(float new_reading, buffer* m_a){
 	int current_index=m_a->index % BUFFER_DEPTH;
 	float old_value=m_a->data[current_index];
@@ -50,7 +60,6 @@ float calculate_pitch_angle(void){
 	inputAx1 = Ax1_moving_average.sum / BUFFER_DEPTH;
 	inputAy1 = Ay1_moving_average.sum / BUFFER_DEPTH;
 	inputAz1 = Az1_moving_average.sum / BUFFER_DEPTH;
-	//printf("PITCH RAW: %f %f %f\n", inputAx1, inputAy1, inputAz1);
 	return DEGREES(atan(inputAx1/sqrt((inputAy1*inputAy1)+(inputAz1*inputAz1))));
 }
 
@@ -68,6 +77,9 @@ float calculate_yaw_angle(void){
 	return DEGREES(acos(inputAz1/NUM_MG_PER_G));
 }
 
+/**
+	@brief Updates the buffers for all three axis
+*/
 void update_moving_average(int32_t Ax, int32_t Ay, int32_t Az){
 	update_buffer(Ax*ACC11 + Ay*ACC12 + Az*ACC13 + ACC10,&Ax1_moving_average);
 	update_buffer(Ax*ACC21 + Ay*ACC22 + Az*ACC23 + ACC20,&Ay1_moving_average);
@@ -86,12 +98,6 @@ float get_average_Az1(void){
 	return Az1_moving_average.sum/BUFFER_DEPTH;
 }
 
-void init_calibration(void){
-	memset(&Ax1_moving_average, 0, sizeof(Ax1_moving_average));
-	memset(&Ay1_moving_average, 0, sizeof(Ay1_moving_average));
-	memset(&Az1_moving_average, 0, sizeof(Az1_moving_average));
-}
-
 void init_accelerometer(void){
 	//General Configuration
 	LIS302DL_InitTypeDef init;
@@ -105,4 +111,9 @@ void init_accelerometer(void){
 	//Interrupt configuration
 	uint8_t data_ready = 4;
 	LIS302DL_Write(&data_ready, LIS302DL_CTRL_REG3_ADDR, 1);
+	
+	// Initialize buffers
+	memset(&Ax1_moving_average, 0, sizeof(Ax1_moving_average));
+	memset(&Ay1_moving_average, 0, sizeof(Ay1_moving_average));
+	memset(&Az1_moving_average, 0, sizeof(Az1_moving_average));
 }

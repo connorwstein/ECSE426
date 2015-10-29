@@ -1,30 +1,44 @@
-#include <stdio.h>
+/**
+  ******************************************************************************
+  * @file    7_segment.c
+  * @author  Connor Stein (connor.stein@mail.mcgill.ca) & Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca)
+  * @version V1.0.0
+  * @date    10-28-2015
+  * @brief   Displays digits on the 7 segment display
+  ****************************************************************************** 
+*/
 
+#include <stdio.h>
 
 #include "7_segment.h"
 
+// Pin mappings to the 7 segments
 #define A GPIO_Pin_14
 #define B GPIO_Pin_0
 #define C GPIO_Pin_13
 #define D GPIO_Pin_3
 #define E GPIO_Pin_5
 #define F GPIO_Pin_11
-#define G GPIO_Pin_15
-#define DP GPIO_Pin_7
+#define G GPIO_Pin_15 
+#define DP GPIO_Pin_7 //Decimal point
 
 uint8_t current_digit = 0;
 int32_t digits[] = {-1,-1,-1,-1};
 int8_t decimals[] ={-1,-1,-1,-1};
 
+/**
+	@brief Initializes all the pins for the display. This needs to be called before any other function
+*/
 void init_7_segment(void){
 	//7 segment pins 1-15: PC1 - PC15  PC0 = pin 16
 	init_gpio(GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | 
 	GPIO_Pin_7 | GPIO_Pin_8 |GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | 
 	GPIO_Pin_15 | GPIO_Pin_0, RCC_AHB1Periph_GPIOC, GPIOC, 0, 0);
-
 }
+/**
+	@brief Enable the pins associated with an individual digit 0-9
+*/
 void draw_digit(uint8_t num){
-
 	switch(num){
 			case 0:
 				//0 = ABCDEF
@@ -77,7 +91,10 @@ void draw_digit(uint8_t num){
 				break;
 		}
 }
-
+/**
+	@brief Select which digit of the 4 available on the display should be enabled. Only selects one of the 4
+	and turns the other ones off
+*/
 void select_digit(int8_t digit){
 	switch(digit){
 		case 1:
@@ -100,65 +117,49 @@ void select_digit(int8_t digit){
 			break;
 	}
 }
+/**
+	@brief Resets the cached (in global array) digits and disables all digit select lines.
+*/
 void clear_digits(void){
 	GPIO_SetBits(GPIOC, GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_6 | GPIO_Pin_8);
 	digits[0] = -1;
 	digits[1] = -1;
 	digits[2] = -1;
 }
+
 void draw_decimal(void){
 	GPIO_SetBits(GPIOC, DP); 
 }
+
 void decimal_off(void){
 	GPIO_ResetBits(GPIOC, DP);
-
 }
+
 void reset_decimal(void){
 	decimals[0] = -1;
 	decimals[1] = -1;
 	decimals[2] = -1;
-	
 }
+
 void draw_degree(void){
 	//Select degree
   GPIO_ResetBits(GPIOC, GPIO_Pin_10);
 	//Enable
 	GPIO_SetBits(GPIOC, GPIO_Pin_9);
 }
-void refresh_7_segment(void){
-	current_digit = (++current_digit)%4;
-	//printf("Current digit %d\n", current_digit);
-	
-	if(digits[current_digit]!=-1){
-		select_digit(3-current_digit);
-		draw_digit(digits[current_digit]);
-		if(digits[0]==0 && digits[1]==0 && digits[2]==0){
-			GPIO_ResetBits(GPIOC, GPIO_Pin_10);
-			GPIO_ResetBits(GPIOC, GPIO_Pin_9);
-		}
-		else{
-			draw_degree();
-		}
-		if(decimals[current_digit]!=-1){
-			//printf("Decimal draw\n");
-			draw_decimal();
-		}
-		else{
-			decimal_off();
-		}
-	}
-}
 
 void draw_number(double num){
 	clear_digits();
 	reset_decimal();
 	uint32_t num_int;
-	if(num==-1){
+	if(num == USER_FAIL){
+		// Draw special error case (000 no degree) when user was unable to guess the correct angle
 		digits[0] = 0;
 		digits[1] = 0;
 		digits[2] = 0;
 		return;
 	}
+	// 3 possible displays XXXdegrees XX.Xdegrees or X.XXdegrees, depending on the size. 
 	else if(num > 99.95){
 		num_int = (uint32_t) num; //No decimal point
 	}
@@ -175,16 +176,48 @@ void draw_number(double num){
 	else{
 		printf("Error: tried to draw invalid number\n");
 	}
-	printf("Decimal %d\n", num_int);
-	digits[0] = num_int % 10;
+	digits[0] = num_int % 10; //Extract first digit
 	num_int /= 10;
-	digits[1] = num_int % 10;
+	digits[1] = num_int % 10; //Extract second digits
 	num_int /= 10;
-	digits[2] = num_int;
-	printf("%d %d %d\n", digits[0], digits[1], digits[2]);
+	digits[2] = num_int; //Third digit
+	printf("%d %d %d\n", digits[0], digits[1], digits[2]); //Debug
 }
 
-
+/**
+	@brief Function to be repeatedly called and quickly switches between displaying each digit
+	to create the illusion that all digits (different digits) are being displayed at the same time.
+*/
+void refresh_7_segment(void){
+	current_digit = (++current_digit)%4; // Current digit cycles like 0,1,2,3,0,1,2,3,0,1...
+	
+	if(digits[current_digit]!=-1){
+		// If the cached digit has been set (i.e. not still the initialization value)
+		// then we want to display it.
+		// Only displaying three digits (all to the left of the degree sign) 
+		// so that the degree sign can be displayed at the end, hence the 3 - current_digit
+		select_digit(3-current_digit); // Enable the current digit. 
+		draw_digit(digits[current_digit]); // Draw the current cached digit
+		if(digits[0]==0 && digits[1]==0 && digits[2]==0){
+			// Special error display of 000 when the user guesses all wrong (with no degree sign)
+			GPIO_ResetBits(GPIOC, GPIO_Pin_10);
+			GPIO_ResetBits(GPIOC, GPIO_Pin_9);
+		}
+		else{
+			draw_degree();
+		}
+		// Add decimal if necessary.
+		if(decimals[current_digit]!=-1){
+			draw_decimal();
+		}
+		else{
+			decimal_off();
+		}
+	}
+}
+/**
+	@brief Simple test that cycles through the digits to ensure that the 7 segment connections are ok.
+*/
 void test_7_segment(void){
 	int j;
 	for(j = 1; j < 5; j++){
