@@ -27,7 +27,7 @@
 #define ENTER_BUTTON 15
 #define SIZE_OF_USER_GUESS 3
 
-uint8_t user_guess[3], number_digits_entered, number_guesses_made, digit_has_been_entered, success;
+uint8_t user_guess[3], number_digits_entered, number_guesses_made, digit_has_been_entered, success, ready_to_update_moving_average,ready_to_refresh_and_detect;
 int8_t current_key, previous_key;
 int32_t accelerometer_out[3];
 float board_angle;
@@ -72,8 +72,8 @@ void init_interrupts(void){
 void EXTI0_IRQHandler(void){
 	if(EXTI_GetITStatus(EXTI_Line0) != RESET){
 			EXTI_ClearITPendingBit(EXTI_Line0); // Clear the interrupt pending bit
-			LIS302DL_ReadACC(accelerometer_out); // Read the accelerometers data 
-			update_moving_average(accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]); // Update the global structures in accelerometer.c
+			LIS302DL_ReadACC(accelerometer_out); // Read the accelerometers data
+			ready_to_update_moving_average = 1;
 	}
 }
 
@@ -87,8 +87,8 @@ void init_TIM3(void){
 	TIM_TimeBaseInitTypeDef init;
 	// Desired rate = ClockFrequency /(prescaler * period)
 	// Clock frequency is 168MHz Period and prescaler are in the range [0x0000, 0xFFFF]
-	// For 1000Hz interrupt rate (100Hz was too slow), let Prescaler be 1000 and the period be 168
-	init.TIM_Prescaler = 1000;
+	// For 480Hz interrupt rate (100Hz was too slow), let Prescaler be 2083 and the period be 168
+	init.TIM_Prescaler = 2083;
 	init.TIM_CounterMode = TIM_CounterMode_Up;
 	init.TIM_Period =  168; 
 	init.TIM_ClockDivision = TIM_CKD_DIV1; 
@@ -115,8 +115,7 @@ void TIM3_IRQHandler(void)
 	{
 		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
 		//Refresh 7 segment
-		refresh_7_segment();
-		current_key = detect_key_pressed();
+		ready_to_refresh_and_detect = 1;
 	}
 }
 
@@ -149,6 +148,8 @@ int main(){
 	board_angle = 0;
 	digit_has_been_entered = 0; 
 	success = 0; // Correctly guessed the angle of the board
+	ready_to_update_moving_average = 0;
+	ready_to_refresh_and_detect = 0;
 	previous_key = NO_KEY_PRESSED;
 	current_key = NO_KEY_PRESSED;
 	
@@ -168,12 +169,28 @@ int main(){
 	int print_counter = 0; // Just to slow down the debug printing
 
 	while(1){
-		if(USE_ROLL == 1){
-			board_angle = fabs(calculate_roll_angle());
+		
+		if(ready_to_update_moving_average == 1){
+			
+			ready_to_update_moving_average = 0;
+			
+			if(USE_ROLL == 1){
+				board_angle = fabs(calculate_roll_angle());
+			}
+			else{
+				board_angle = fabs(calculate_pitch_angle());
+			}
+			
+			update_moving_average(accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]); // Update the global structures in accelerometer.c
 		}
-		else{
-			board_angle = fabs(calculate_pitch_angle());
+		
+		
+		if(ready_to_refresh_and_detect == 1){	
+				ready_to_refresh_and_detect = 0;
+				refresh_7_segment();
+				current_key = detect_key_pressed();
 		}
+			
 		if(print_counter%10000 == 0){
 			printf("Angles: roll %f pitch %f yaw %f\n", calculate_roll_angle(), calculate_pitch_angle(), calculate_yaw_angle());
 		}
