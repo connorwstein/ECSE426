@@ -174,14 +174,14 @@ int main(){
 			
 			ready_to_update_moving_average = 0;
 			
+			update_moving_average(accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]); // Update the global structures in accelerometer.c
+			
 			if(USE_ROLL == 1){
 				board_angle = fabs(calculate_roll_angle());
 			}
 			else{
 				board_angle = fabs(calculate_pitch_angle());
 			}
-			
-			update_moving_average(accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]); // Update the global structures in accelerometer.c
 		}
 		
 		
