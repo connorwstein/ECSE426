@@ -19,17 +19,20 @@
 #include "accelerometer.h"
 #include "7_segment.h"
 #include "keypad.h"
+#include "temperature.h"
 
 #define CHECK_BIT(var,pos) (((var) & (1<<(pos)))>>(pos))
 #define SHOW_ROLL 1
 #define SHOW_PITCH 2
+#define ENTER_KEY 15
 
-uint8_t digit_has_been_entered,ready_to_update_moving_average,ready_to_refresh_and_detect;
+uint8_t digit_has_been_entered,ready_to_update_moving_average,ready_to_refresh_and_detect, ready_to_read_ADC, display_mode;
 int8_t current_key, previous_key;
 int32_t accelerometer_out[3];
 float angle_to_draw;
 float roll;
 float pitch;
+float temperature;
 
 /**
 	@brief Initializes the interrupts and interrupt handler for the accelerometer 
@@ -76,6 +79,53 @@ void EXTI0_IRQHandler(void){
 	}
 }
 
+
+
+//for the ADC
+void init_TIM4(void){
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);	//Enable the peripheral clock
+
+	TIM_TimeBaseInitTypeDef init;
+	// Desired rate = ClockFrequency /(prescaler * period)
+	// Clock frequency is 168MHz Period and prescaler are in the range [0x0000, 0xFFFF]
+	// For 50Hz interrupt rate, let Prescaler be 20000 and the period be 168
+	init.TIM_Prescaler = 20000;
+	init.TIM_CounterMode = TIM_CounterMode_Up;
+	init.TIM_Period =  168; 
+	init.TIM_ClockDivision = TIM_CKD_DIV1; 
+	TIM_TimeBaseInit(TIM4, &init); 	//Initialize Timer 4
+	
+	// Add to interrupt routine to the NVIC
+	NVIC_InitTypeDef nvic;	
+	nvic.NVIC_IRQChannel = TIM4_IRQn; 
+	nvic.NVIC_IRQChannelCmd = ENABLE; 
+	nvic.NVIC_IRQChannelPreemptionPriority = 0x00; 
+	nvic.NVIC_IRQChannelSubPriority = 0x00; 
+	NVIC_Init(&nvic); 
+	
+	TIM_ITConfig(TIM4, TIM_IT_Update, ENABLE); //Link interrupt and Timer
+	TIM_Cmd(TIM4, ENABLE); 	//Start Timer
+	
+}
+
+/**
+	@brief Handler for the timer interrupt, refreshes the 7 segment display and checks for pressed keys
+*/
+void TIM4_IRQHandler(void)
+{
+	if (TIM_GetITStatus(TIM4, TIM_IT_Update) != RESET)
+	{
+		TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
+		ready_to_read_ADC = 1;
+	}
+}
+
+
+
+
+
+
+
 /**
 	@brief Initializes the interrupt timer used for both refreshing the 7 segment display
 	and reading input from the keypad
@@ -119,15 +169,21 @@ void TIM3_IRQHandler(void)
 }
 
 
+
+
 int main(){
 
 	digit_has_been_entered = 0; 
 	ready_to_update_moving_average = 0;
 	ready_to_refresh_and_detect = 0;
+	ready_to_read_ADC = 0;
 	previous_key = NO_KEY_PRESSED;
 	current_key = NO_KEY_PRESSED;
 	angle_to_draw = SHOW_ROLL;
+	temperature = 0;
+	display_mode = 0;
 	
+	initialize_ADC_Temp();
 	
 	// Start the accelerometer interrupts
 	init_accelerometer();
@@ -138,8 +194,14 @@ int main(){
 	// Note that the keypad does not need to be initialized (GPIOs will be set on the first call)
 	init_7_segment();
 	init_TIM3();
+	init_TIM4();
 	
 	while(1){
+		
+		if(ready_to_read_ADC == 1){
+			ready_to_read_ADC = 0;
+			temperature = get_temp();
+		}
 		
 		if(ready_to_update_moving_average == 1){
 			
@@ -151,14 +213,19 @@ int main(){
 		if(ready_to_refresh_and_detect == 1){			
 				ready_to_refresh_and_detect = 0;
 			
-				if(angle_to_draw==SHOW_ROLL){
-					draw_number(roll);
-				}
-				else{
-					draw_number(pitch);
+				if(display_mode == 0){
+					if(angle_to_draw == SHOW_ROLL){
+						draw_number(roll);
+					}
+					else{
+						draw_number(pitch);
+					}
 				}
 				
-			
+				else{
+					draw_number(temperature);
+				}
+
 				refresh_7_segment();
 				current_key = detect_key_pressed();
 		}
@@ -177,13 +244,21 @@ int main(){
 		pitch = fabs(calculate_pitch_angle());
 
 		if(digit_has_been_entered == 1 && current_key != NO_KEY_PRESSED){
-			if(current_key == SHOW_ROLL){
-				angle_to_draw = SHOW_ROLL;
+			
+			if(current_key == ENTER_KEY){
+				display_mode = !display_mode;
 			}
-			else if(current_key == SHOW_PITCH){
-				angle_to_draw = SHOW_PITCH;
+		
+			if(display_mode == 0){
+				if(current_key == SHOW_ROLL){
+					angle_to_draw = SHOW_ROLL;
+				}
+				else if(current_key == SHOW_PITCH){
+					angle_to_draw = SHOW_PITCH;
+				}
 			}
 		}
+		
 	}
 }
 

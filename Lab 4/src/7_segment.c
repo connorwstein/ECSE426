@@ -181,7 +181,7 @@ void draw_number(double num){
 	digits[1] = num_int % 10; //Extract second digits
 	num_int /= 10;
 	digits[2] = num_int; //Third digit
-	printf("%d %d %d\n", digits[0], digits[1], digits[2]); //Debug
+	//printf("%d %d %d\n", digits[0], digits[1], digits[2]); //Debug
 }
 
 /**
