@@ -152,11 +152,13 @@ void draw_number(double num){
 	clear_digits();
 	reset_decimal();
 	uint32_t num_int;
-	if(num == USER_FAIL){
+	if(num == ALARM){
 		// Draw special error case (000 no degree) when user was unable to guess the correct angle
-		digits[0] = 0;
-		digits[1] = 0;
-		digits[2] = 0;
+		clear_digits();
+		//Select degree
+		GPIO_ResetBits(GPIOC, GPIO_Pin_10);
+		//disable
+		GPIO_ResetBits(GPIOC, GPIO_Pin_9);
 		return;
 	}
 	// 3 possible displays XXXdegrees XX.Xdegrees or X.XXdegrees, depending on the size. 
@@ -198,14 +200,7 @@ void refresh_7_segment(void){
 		// so that the degree sign can be displayed at the end, hence the 3 - current_digit
 		select_digit(3-current_digit); // Enable the current digit. 
 		draw_digit(digits[current_digit]); // Draw the current cached digit
-		if(digits[0]==0 && digits[1]==0 && digits[2]==0){
-			// Special error display of 000 when the user guesses all wrong (with no degree sign)
-			GPIO_ResetBits(GPIOC, GPIO_Pin_10);
-			GPIO_ResetBits(GPIOC, GPIO_Pin_9);
-		}
-		else{
-			draw_degree();
-		}
+		draw_degree();
 		// Add decimal if necessary.
 		if(decimals[current_digit]!=-1){
 			draw_decimal();
@@ -214,6 +209,7 @@ void refresh_7_segment(void){
 			decimal_off();
 		}
 	}
+	
 }
 /**
 	@brief Simple test that cycles through the digits to ensure that the 7 segment connections are ok.

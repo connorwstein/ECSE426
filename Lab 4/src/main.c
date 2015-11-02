@@ -25,8 +25,9 @@
 #define SHOW_ROLL 1
 #define SHOW_PITCH 2
 #define ENTER_KEY 15
+#define TEMPERATURE_THRESHOLD 43
 
-uint8_t digit_has_been_entered,ready_to_update_moving_average,ready_to_refresh_and_detect, ready_to_read_ADC, display_mode;
+uint8_t digit_has_been_entered,ready_to_update_moving_average,ready_to_refresh_and_detect, ready_to_read_ADC, display_mode, alarm_flag;
 int8_t current_key, previous_key;
 int32_t accelerometer_out[3];
 float angle_to_draw;
@@ -81,6 +82,53 @@ void EXTI0_IRQHandler(void){
 
 
 
+//for the alarm flashing
+void init_TIM5(void){
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);	//Enable the peripheral clock
+
+	TIM_TimeBaseInitTypeDef init;
+	// Desired rate = ClockFrequency /(prescaler * period)
+	// Clock frequency is 168MHz Period and prescaler are in the range [0x0000, 0xFFFF]
+	// For 5Hz interrupt rate, let Prescaler be 20000 and the period be 1680
+	init.TIM_Prescaler = 20000;
+	init.TIM_CounterMode = TIM_CounterMode_Up;
+	init.TIM_Period =  1680; 
+	init.TIM_ClockDivision = TIM_CKD_DIV1; 
+	TIM_TimeBaseInit(TIM5, &init); 	//Initialize Timer 5
+	
+	// Add to interrupt routine to the NVIC
+	NVIC_InitTypeDef nvic;	
+	nvic.NVIC_IRQChannel = TIM5_IRQn; 
+	nvic.NVIC_IRQChannelCmd = ENABLE; 
+	nvic.NVIC_IRQChannelPreemptionPriority = 0x00; 
+	nvic.NVIC_IRQChannelSubPriority = 0x00; 
+	NVIC_Init(&nvic); 
+	
+	TIM_ITConfig(TIM5, TIM_IT_Update, ENABLE); //Link interrupt and Timer
+	TIM_Cmd(TIM5, ENABLE); 	//Start Timer
+	
+}
+
+/**
+	@brief Handler for the timer interrupt
+*/
+void TIM5_IRQHandler(void)
+{
+	if (TIM_GetITStatus(TIM5, TIM_IT_Update) != RESET)
+	{
+		TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
+		alarm_flag = !alarm_flag;
+	}
+}
+
+
+
+
+
+
+
+
+
 //for the ADC
 void init_TIM4(void){
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);	//Enable the peripheral clock
@@ -109,7 +157,7 @@ void init_TIM4(void){
 }
 
 /**
-	@brief Handler for the timer interrupt, refreshes the 7 segment display and checks for pressed keys
+	@brief Handler for the timer interrupt
 */
 void TIM4_IRQHandler(void)
 {
@@ -182,6 +230,7 @@ int main(){
 	angle_to_draw = SHOW_ROLL;
 	temperature = 0;
 	display_mode = 0;
+	alarm_flag = 0;
 	
 	initialize_ADC_Temp();
 	
@@ -195,12 +244,16 @@ int main(){
 	init_7_segment();
 	init_TIM3();
 	init_TIM4();
+	init_TIM5();
+	
+	int print_counter = 0;
 	
 	while(1){
 		
 		if(ready_to_read_ADC == 1){
 			ready_to_read_ADC = 0;
-			temperature = get_temp();
+			store_temperature_in_buffer();
+			temperature = get_average_temperature();
 		}
 		
 		if(ready_to_update_moving_average == 1){
@@ -208,12 +261,24 @@ int main(){
 			ready_to_update_moving_average = 0;
 			
 			update_moving_average(accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]); // Update the global structures in accelerometer.c
+			
+			roll = fabs(calculate_roll_angle());
+			pitch = fabs(calculate_pitch_angle());
 		}
 		
 		if(ready_to_refresh_and_detect == 1){			
 				ready_to_refresh_and_detect = 0;
 			
-				if(display_mode == 0){
+				if(print_counter%10==0){
+					printf("%f\n",temperature);
+				}
+				print_counter++;
+			
+				if(temperature*alarm_flag > TEMPERATURE_THRESHOLD){
+					draw_number(ALARM);
+				}
+			
+				else if(display_mode == 0){
 					if(angle_to_draw == SHOW_ROLL){
 						draw_number(roll);
 					}
@@ -239,10 +304,8 @@ int main(){
 			// No key press
 			digit_has_been_entered = 0;
 		}
+	
 		
-		roll = fabs(calculate_roll_angle());
-		pitch = fabs(calculate_pitch_angle());
-
 		if(digit_has_been_entered == 1 && current_key != NO_KEY_PRESSED){
 			
 			if(current_key == ENTER_KEY){

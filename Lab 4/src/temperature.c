@@ -3,6 +3,47 @@
 
 #include "temperature.h"
 
+
+#define D 50 //size of the moving average buffer
+
+typedef struct{
+	float data[D];
+	int index;
+	float sum;
+} buffer;
+
+buffer temperature_moving_average;
+
+void update_temperature_buffer(float new_reading){
+	int current_index=temperature_moving_average.index % D;
+	float old_value=temperature_moving_average.data[current_index];
+	temperature_moving_average.sum-=old_value;
+	temperature_moving_average.data[current_index]=new_reading;
+	temperature_moving_average.sum+=new_reading;
+	temperature_moving_average.index++;
+}
+
+
+float get_average_temperature(){
+	return temperature_moving_average.sum/D;
+}
+
+
+/**
+	Read temperature from the ADC
+*/
+void store_temperature_in_buffer(){
+	ADC_SoftwareStartConv(ADC1);
+	
+	while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET){};
+		
+	float temp1=ADC_GetConversionValue(ADC1);//returns last ADC converted value
+	update_temperature_buffer((temp1*3000/4096 - 760)/2.5 + 25); //4096 is when 3V is applied, all 12 bits will be on, ADC returns what percentage of that it sees
+}
+
+
+
+
 void initialize_ADC_Temp(){
 	ADC_InitTypeDef adc_init_s;  // Structure to initialize definitions of ADC!
 	ADC_CommonInitTypeDef adc_common_init_s; // ADC Common Init structure definition!!
@@ -35,15 +76,3 @@ void initialize_ADC_Temp(){
 
 
 
-/**
-	Read temperature from the ADC
-	@return float which is the temperature in degrees
-*/
-float get_temp(){
-	ADC_SoftwareStartConv(ADC1);
-	
-	while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET){};
-		
-	float temp1=ADC_GetConversionValue(ADC1);//returns last ADC converted value
-	return (temp1*3000/4096 - 760)/2.5 + 25; //4096 is when 3V is applied, all 12 bits will be on, ADC returns what percentage of that it sees
-}

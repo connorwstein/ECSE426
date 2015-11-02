@@ -3,7 +3,7 @@
 
 #include "gpio.h"
 
-#define USER_FAIL -1
+#define ALARM -1
 
 void init_7_segment(void);
 void test_7_segment(void);
