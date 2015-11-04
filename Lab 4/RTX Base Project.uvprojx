@@ -10,6 +10,7 @@
       <TargetName>Target 1</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
+      <pCCUsed>5060020::V5.06 (build 20)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F407VG</Device>
@@ -424,6 +425,31 @@
               <FileName>fputc_debug.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\fputc_debug.c</FilePath>
+            </File>
+            <File>
+              <FileName>7_segment.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\7_segment.c</FilePath>
+            </File>
+            <File>
+              <FileName>accelerometer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\accelerometer.c</FilePath>
+            </File>
+            <File>
+              <FileName>gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\gpio.c</FilePath>
+            </File>
+            <File>
+              <FileName>keypad.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\keypad.c</FilePath>
+            </File>
+            <File>
+              <FileName>temperature.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\temperature.c</FilePath>
             </File>
           </Files>
         </Group>

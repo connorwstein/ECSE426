@@ -5,6 +5,7 @@
 ".\obj\accelerometer.o"
 ".\obj\gpio.o"
 ".\obj\keypad.o"
+".\obj\temperature.o"
 ".\obj\lis3dsh.o"
 ".\obj\lis302dl.o"
 "C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Lib\ARM\arm_cortexM4lf_math.lib"

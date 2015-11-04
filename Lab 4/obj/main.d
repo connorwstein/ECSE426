@@ -1,7 +1,10 @@
 .\obj\main.o: src\main.c
+.\obj\main.o: src\osObjects.h
+.\obj\main.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\RTOS\RTX\INC\cmsis_os.h
+.\obj\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\obj\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\obj\main.o: C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\1.0.8\Device\Include\stm32f4xx.h
 .\obj\main.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\core_cm4.h
-.\obj\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 .\obj\main.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\core_cmInstr.h
 .\obj\main.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\cmsis_armcc.h
 .\obj\main.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.4.0\CMSIS\Include\core_cmFunc.h
@@ -43,3 +46,4 @@
 .\obj\main.o: .\inc\7_segment.h
 .\obj\main.o: .\inc\gpio.h
 .\obj\main.o: .\inc\keypad.h
+.\obj\main.o: .\inc\temperature.h
