@@ -27,24 +27,43 @@
 #define SHOW_ROLL 1
 #define SHOW_PITCH 2
 #define ENTER_KEY 15
-#define TEMPERATURE_THRESHOLD 39
+#define TEMPERATURE_THRESHOLD 50
 #define ALARM_COUNTER_MAX 200
+#define ANGLE_THRESHOLD 0.1
 
-uint8_t digit_has_been_entered, display_mode;
-uint8_t status_reg_buffer[1];
-int8_t current_key, previous_key;
+uint8_t display_mode;
 int32_t accelerometer_out[3];
 float angle_to_draw;
 float roll;
 float pitch;
 float temperature;
-int32_t alarm_flag_counter;
+
+
+void temperature_reader(void const *argument);
+void display_refresher(void const *argument);
+void accelerometer_reader(void const *argument);
+void keypad_detector(void const *argument);
+
 
 // ID for thread
 osThreadId temperature_reader_thread;
 osThreadId accelerometer_reader_thread;
 osThreadId display_refresher_thread;
 osThreadId keypad_detector_thread;
+
+
+osMutexId temperature_mutex;
+osMutexId accelerometer_mutex;
+osMutexId keypad_mutex;
+
+osThreadDef(temperature_reader, osPriorityNormal, 1, 400);
+osThreadDef(display_refresher, osPriorityNormal, 1, 400);
+osThreadDef(accelerometer_reader, osPriorityNormal, 1, 1000);
+osThreadDef(keypad_detector, osPriorityNormal, 1, 400);
+
+osMutexDef(temperature_mutex);
+osMutexDef(accelerometer_mutex);
+osMutexDef(keypad_mutex);
 
 /**
 	@brief Initializes the interrupts and interrupt handler for the accelerometer 
@@ -106,7 +125,7 @@ void init_TIM5(void){
 	// For 100Hz interrupt rate, let Prescaler be 10000 and the period be 168
 	init.TIM_Prescaler = 10000;
 	init.TIM_CounterMode = TIM_CounterMode_Up;
-	init.TIM_Period =  168; 
+	init.TIM_Period =  168/2; 
 	init.TIM_ClockDivision = TIM_CKD_DIV1; 
 	TIM_TimeBaseInit(TIM5, &init); 	//Initialize Timer 5
 	
@@ -153,7 +172,7 @@ void init_TIM4(void){
 	// For 50Hz interrupt rate, let Prescaler be 20000 and the period be 168
 	init.TIM_Prescaler = 20000;
 	init.TIM_CounterMode = TIM_CounterMode_Up;
-	init.TIM_Period =  168; 
+	init.TIM_Period =  168/2; 
 	init.TIM_ClockDivision = TIM_CKD_DIV1; 
 	TIM_TimeBaseInit(TIM4, &init); 	//Initialize Timer 4
 	
@@ -201,7 +220,7 @@ void init_TIM3(void){
 	// For 480Hz interrupt rate (100Hz was too slow), let Prescaler be 2083 and the period be 168
 	init.TIM_Prescaler = 2083;
 	init.TIM_CounterMode = TIM_CounterMode_Up;
-	init.TIM_Period =  168; 
+	init.TIM_Period = 168/2; 
 	init.TIM_ClockDivision = TIM_CKD_DIV1; 
 	TIM_TimeBaseInit(TIM3, &init); 	//Initialize Timer 3
 	
@@ -233,24 +252,34 @@ void TIM3_IRQHandler(void)
 
 
 void temperature_reader(void const *argument){
+	temperature_mutex = osMutexCreate(osMutex(temperature_mutex));
 	while(1){
 		osSignalWait(1,osWaitForever);
 		store_temperature_in_buffer();
+		osMutexWait(temperature_mutex,osWaitForever);
 		temperature = get_average_temperature();
+		osMutexRelease(temperature_mutex);
 	}
 }
 
 void accelerometer_reader(void const *argument){
+	accelerometer_mutex = osMutexCreate(osMutex(accelerometer_mutex));
 	while(1){
 		osSignalWait(1,osWaitForever);
 		update_moving_average(accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]); // Update the global structures in accelerometer.c
+		osMutexWait(accelerometer_mutex,osWaitForever);
 		roll = fabs(calculate_roll_angle());
 		pitch = fabs(calculate_pitch_angle());
+		osMutexRelease(accelerometer_mutex);
 	}
 }
 
 
 void keypad_detector(void const *argument){
+	keypad_mutex = osMutexCreate(osMutex(keypad_mutex));
+	int8_t current_key = NO_KEY_PRESSED; 
+	int8_t previous_key = NO_KEY_PRESSED;
+	uint8_t digit_has_been_entered = 0;
 	while(1){
 		osSignalWait(1,osWaitForever);
 		current_key = detect_key_pressed();
@@ -267,6 +296,8 @@ void keypad_detector(void const *argument){
 		
 		if(digit_has_been_entered == 1 && current_key != NO_KEY_PRESSED){
 			
+			osMutexWait(keypad_mutex,osWaitForever);
+			
 			if(current_key == ENTER_KEY){
 				display_mode = !display_mode;
 			}
@@ -279,30 +310,50 @@ void keypad_detector(void const *argument){
 					angle_to_draw = SHOW_PITCH;
 				}
 			}
+			
+			osMutexRelease(keypad_mutex);
 		}
 	}
 }
 
 void display_refresher(void const *argument){
+	int32_t alarm_flag_counter = 0;
+	float previous_roll = 0;
+	float previous_pitch = 0;
+	uint8_t previous_display_mode = 0;
 	while(1){
 		osSignalWait(1,osWaitForever);
 		if(++alarm_flag_counter>=ALARM_COUNTER_MAX){
 			alarm_flag_counter=0;
 		}
+		
+		osMutexWait(temperature_mutex,osWaitForever);
+		osMutexWait(keypad_mutex,osWaitForever);
+		
 		if(temperature > TEMPERATURE_THRESHOLD && alarm_flag_counter<ALARM_COUNTER_MAX/2){
 			draw_number(ALARM);
-		}	
+		}
 		else if(display_mode == 0){
-			if(angle_to_draw == SHOW_ROLL){
+			osMutexWait(accelerometer_mutex,osWaitForever);
+			//printf("displayMode %d     previousDisplayMode %d\n", display_mode, previous_display_mode);
+			if(angle_to_draw == SHOW_ROLL && ((fabs(roll - previous_roll) > ANGLE_THRESHOLD) || (display_mode != previous_display_mode))){
+				previous_roll = roll;
 				draw_number(roll);
 			}
-			else{
+			else if(angle_to_draw == SHOW_PITCH && ((fabs(pitch - previous_pitch) > ANGLE_THRESHOLD) || (display_mode != previous_display_mode))){
+				previous_pitch = pitch;
 				draw_number(pitch);
 			}
+			previous_display_mode = display_mode;
+			osMutexRelease(accelerometer_mutex);
 		}
 		else{
 			draw_number(temperature);
+			previous_display_mode = display_mode;
 		}
+		
+		osMutexRelease(keypad_mutex);
+		osMutexRelease(temperature_mutex);
 
 		refresh_7_segment();
 	}
@@ -310,16 +361,12 @@ void display_refresher(void const *argument){
 
 
 
-osThreadDef(temperature_reader, osPriorityNormal, 1, 400);
-osThreadDef(display_refresher, osPriorityAboveNormal, 1, 400);
-osThreadDef(accelerometer_reader, osPriorityNormal, 1, 1000);
-osThreadDef(keypad_detector, osPriorityNormal, 1, 400);
-
 int main(){
 
 	osKernelInitialize ();                    // initialize CMSIS-RTOS
-	
-	alarm_flag_counter = 0;
+
+	display_mode = 0;
+	angle_to_draw = SHOW_ROLL;
 	
   // initialize peripherals here
 	initialize_ADC_Temp();
