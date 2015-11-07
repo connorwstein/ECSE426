@@ -359,9 +359,29 @@ int main(){
   GPIO_Init(GPIOE, &GPIO_InitStructure);
 	GPIO_SetBits(GPIOE, GPIO_Pin_3);
 	printf("PE3 %d\n", GPIO_ReadInputDataBit(GPIOE, GPIO_Pin_3));
+	
+	uint8_t byte_write = 96; //119 Hz and 2g range
+	LSM9DS1_Write(&byte_write, LSM9DS1_CTRL_REG6_XL, 1); 
+	printf("Sent %d on the bus\n", byte_write);
+	
 	uint8_t byte_read = 0;
-	LSM9DS1_Read(&byte_read, 0x0F, 1); 
+	LSM9DS1_Read(&byte_read, LSM9DS1_CTRL_REG6_XL, 1); 
 	printf("Received %d on the bus\n", byte_read);
+	
+	
+	
+	byte_write = 56; //enable all axes
+	LSM9DS1_Write(&byte_write, LSM9DS1_CTRL_REG5_XL, 1); 
+	printf("Sent %d on the bus\n", byte_write);
+	
+	byte_read = 0;
+	LSM9DS1_Read(&byte_read, LSM9DS1_CTRL_REG5_XL, 1); 
+	printf("Received %d on the bus\n", byte_read);
+	
+	int32_t accelerometer_out[3];
+	LSM9DS1_ReadACC(accelerometer_out);
+	
+	printf("%d %d %d\n", accelerometer_out[0],accelerometer_out[1],accelerometer_out[2]);
 //	osKernelInitialize ();                    // initialize CMSIS-RTOS
 
 //	display_mode = 0;

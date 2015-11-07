@@ -11,38 +11,6 @@
 /* Dummy Byte Send by the SPI Master device in order to generate the Clock to the Slave device */
 #define DUMMY_BYTE                 ((uint8_t)0x00)
 
-/*******************************************************************************
-*  FF_WU_SRC_1 Register: Interrupt 1 source register.
-*  Reading at this address clears FF_WU_SRC_1 register and the FF, WU 1 interrupt
-*  and allow the refreshment of data in the FF_WU_SRC_1 register if the latched option
-*  was chosen.
-*  Read only register
-*  Default value: 0x00
-*  7 Reserved
-*  6 IA: Interrupt active.
-*        0: no interrupt has been generated
-*        1: one or more interrupts have been generated
-*  5 ZH: Z high. 
-*        0: no interrupt
-*        1: ZH event has occurred 
-*  4 ZL: Z low.
-*        0: no interrupt
-*        1: ZL event has occurred
-*  3 YH: Y high.
-*        0: no interrupt
-*        1: YH event has occurred 
-*  2 YL: Y low.
-*        0: no interrupt
-*        1: YL event has occurred
-*  1 YH: X high.
-*        0: no interrupt
-*        1: XH event has occurred 
-*  0 YL: X low.
-*        0: no interrupt
-*        1: XL event has occurred
-*******************************************************************************/
-
-
 
 #define LSM9DS1_ACT_THS	0x04
 #define LSM9DS1_ACT_DUR	0x05
@@ -156,6 +124,14 @@
 #define LSM9DS1_SPI_INT2_EXTI_IRQn        EXTI1_IRQn 
 
 
+#define LIS3DSH_SENSITIVITY_2G    	0.061 		      
+#define LIS3DSH_SENSITIVITY_4G		  0.122			  
+#define LIS3DSH_SENSITIVITY_8G		  0.244	   	 
+#define LIS3DSH_SENSITIVITY_16G    	0.732 
+
+void LSM9DS1_ReadACC(int32_t* out);
+void LSM9DS1_Write(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite);
+void LSM9DS1_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead);
 uint8_t LSM9DS1_SendByte(uint8_t byte);
 void LSM9DS1_LowLevel_Init(void);
 
