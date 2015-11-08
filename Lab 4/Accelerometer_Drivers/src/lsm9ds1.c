@@ -85,6 +85,7 @@ void LSM9DS1_Write(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite)
        - When 0, the address will remain unchanged in multiple read/write commands.
        - When 1, the address will be auto incremented in multiple read/write commands.
   */
+	
   if(NumByteToWrite > 0x01)
   {
     WriteAddr |= (uint8_t)MULTIPLEBYTE_CMD;
@@ -138,6 +139,7 @@ void LSM9DS1_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead)
 		//printf("reading address %d\n",ReadAddr);
     /* Send dummy byte (0x00) to generate the SPI clock to LSM9DS1 (Slave device) */
     *pBuffer = LSM9DS1_SendByte(DUMMY_BYTE);
+		//printf("Recevied a byte: %d\n", *pBuffer);
     NumByteToRead--;
     pBuffer++;
   }
@@ -161,7 +163,6 @@ uint8_t LSM9DS1_SendByte(uint8_t byte)
   {
     if((LSM9DS1Timeout--) == 0) return LSM9DS1_TIMEOUT_UserCallback();
   }
-  //printf("Sending byte\n");
   /* Send a Byte through the SPI peripheral */
   SPI_I2S_SendData(LSM9DS1_SPI, byte);
   
@@ -171,9 +172,8 @@ uint8_t LSM9DS1_SendByte(uint8_t byte)
   {
     if((LSM9DS1Timeout--) == 0) return LSM9DS1_TIMEOUT_UserCallback();
   }
-  
   /* Return the Byte read from the SPI bus */
-  return (uint8_t)SPI_I2S_ReceiveData(LSM9DS1_SPI);
+  return (uint8_t) SPI_I2S_ReceiveData(LSM9DS1_SPI);
 }
 
 /**

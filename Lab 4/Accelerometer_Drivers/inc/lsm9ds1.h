@@ -65,19 +65,8 @@
 
 
 /** SPI INTERFACE **/
-
-/**
-  * @brief  LSM9DS1 SPI Interface pins
-  */
-	
-
 #define LSM9DS1_FLAG_TIMEOUT         ((uint32_t)0x1000)
-	//  PD1 = INT1 interrupt
-//	PD2 = SCL 	SPI clock
-//	PD3 = SDA 	SPI input
-//	PD6 = CSAG    Chip select for acclerometer/ gyro
-//	PD7 = SDOAG   SPI ouput from accelerometer  / gyro
-	//Using SPI2 for the interface to external accelerometer sensor
+
 /**
   * @brief  LSM9DS1 SPI Interface pins
   */
