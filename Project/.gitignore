@@ -1,4 +1,8 @@
-bject files
+# PDFs
+*.pdf
+
+
+# object files
 *.o
 *.ko
 *.obj
