@@ -1,6 +1,6 @@
-# Microprocessor Systems Final Project Fall 2015
+Microprocessor Systems Final Project Fall 2015
 
-# Group Members
+Group Members
   Faisal Al-Kabariti
   Connor Stein
   Kamil Ahmad
