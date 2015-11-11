@@ -17,40 +17,42 @@ void LSM9DS1_ReadACC(int32_t* out)
   uint8_t buffer[6];
   uint8_t crtl, i = 0x00;
    
-  LSM9DS1_Read(&crtl, LSM9DS1_CTRL_REG6_XL, 1);  
-  LSM9DS1_Read(buffer, LSM9DS1_OUT_X_L_XL, 6);
-  //printf("Raw buffer %d %d %d %d %d %d\n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
-  switch(crtl & 0x18) 
+  LSM9DS1_Read(&crtl, LSM9DS1_CTRL_REG6_XL, 1); 
+	LSM9DS1_Read(buffer, LSM9DS1_OUT_X_H_XL, 1);	
+	LSM9DS1_Read(buffer+1, LSM9DS1_OUT_X_L_XL, 1);
+	LSM9DS1_Read(buffer+2, LSM9DS1_OUT_Y_H_XL, 1);
+	LSM9DS1_Read(buffer+3, LSM9DS1_OUT_Y_L_XL, 1);
+	LSM9DS1_Read(buffer+4, LSM9DS1_OUT_Z_H_XL, 1);
+	LSM9DS1_Read(buffer+5, LSM9DS1_OUT_Z_L_XL, 1);
+	switch(crtl & 0x18) 
     {
     /* FS bit = 0 ==> Sensitivity typical value = 18milligals/digit*/ 
-    case 0x00:
-      for(i=0; i<0x03; i++)
-      {
-        *out =(int32_t)(LIS3DSH_SENSITIVITY_2G *  (int16_t)buffer[2*i]);
+    case XL_SCALE_2G:
+      for(i = 0; i < 6; i+=2){
+        *out =(int32_t)(XL_SENSITIVITY_2G * (int16_t)(buffer[i+1]+(buffer[i]<<8)));
         out++;
       }
       break;
     /* FS bit = 1 ==> Sensitivity typical value = 72milligals/digit*/ 
-    case 0x08:
-      for(i=0; i<0x03; i++)
-      {
-        *out =(int32_t)(LIS3DSH_SENSITIVITY_16G * (int16_t)buffer[2*i]);
+    case XL_SCALE_16G:
+      for(i = 0; i < 6; i+=2){
+        *out =(int32_t)(XL_SENSITIVITY_16G * (int16_t)(buffer[i+1]+(buffer[i]<<8)));
         out++;
-      }         
+      }
       break;
-		case 0x10:
-      for(i=0; i<0x03; i++)
-      {
-        *out =(int32_t)(LIS3DSH_SENSITIVITY_4G * (int16_t)buffer[2*i]);
+		case XL_SCALE_4G:
+      for(i = 0; i < 6; i+=2){
+        *out =(int32_t)(XL_SENSITIVITY_4G * (int16_t)(buffer[i+1]+(buffer[i]<<8)));
         out++;
-     }         
+      }
+      break;    
       break;
-		case 0x18:
-      for(i=0; i<0x03; i++)
-      {
-        *out =(int32_t)(LIS3DSH_SENSITIVITY_8G * (int16_t)buffer[2*i]);
+		case XL_SCALE_8G:
+			for(i = 0; i < 6; i+=2){
+        *out =(int32_t)(XL_SENSITIVITY_8G * (int16_t)(buffer[i+1]+(buffer[i]<<8)));
         out++;
-      }         
+      }
+      break;      
       break;
     default:
       break;
@@ -162,20 +164,19 @@ void LSM9DS1_LowLevel_Init(void)
   *         that contains the configuration setting for the LSM9DS1.
   * @retval None
   */
-void LSM9DS1_Init(void)
+void LSM9DS1_Init(LSM9DS1_InitTypeDef *init)
 {
-  //uint8_t ctrl = 0x00;
-  
-  /* Configure the low level interface ---------------------------------------*/
+	// Configure the low level interface 
   LSM9DS1_LowLevel_Init();
+	
+	// Configure data rate and scale
+  uint8_t ctrl_reg_5_xl = init->DataRate | init->Scale; 
+	LSM9DS1_Write(&ctrl_reg_5_xl,LSM9DS1_CTRL_REG6_XL, 1);
+	
+	// Configure axes
+	uint8_t ctrl_reg_6_xl = init->Axes; 
+	LSM9DS1_Write(&ctrl_reg_6_xl,LSM9DS1_CTRL_REG5_XL, 1);
   
-  /* Configure MEMS: data rate, power mode, full scale, self test and axes */
-//  ctrl = (uint8_t) (LSM9DS1_InitStruct->Output_DataRate | LSM9DS1_InitStruct->Power_Mode | \
-//                    LSM9DS1_InitStruct->Full_Scale | LSM9DS1_InitStruct->Self_Test | \
-//                    LSM9DS1_InitStruct->Axes_Enable);
-  
-  /* Write value to MEMS CTRL_REG1 regsister */
-  //LSM9DS1_Write(&ctrl, LSM9DS1_CTRL_REG1_ADDR, 1);
 }
 
 /**

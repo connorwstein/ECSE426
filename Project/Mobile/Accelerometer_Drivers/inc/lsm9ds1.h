@@ -1,28 +1,39 @@
 #include "stm32f4xx.h"
 #include "stm32f4xx_conf.h"
 
-#define LSM9DS1_CS_LOW()       GPIO_ResetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN)
-#define LSM9DS1_CS_HIGH()      GPIO_SetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN)
-
-/* Read/Write command */
-#define READWRITE_CMD              ((uint8_t)0x80) 
-/* Multiple byte read/write command */ 
-#define MULTIPLEBYTE_CMD           ((uint8_t)0x40)
-/* Dummy Byte Send by the SPI Master device in order to generate the Clock to the Slave device */
-#define DUMMY_BYTE                 ((uint8_t)0x00)
+/** LSM9DS1 Init **/
+typedef struct
+{
+  uint8_t DataRate;  //See below for possible data rates             
+	uint8_t Scale;  					 //See below for possbile scales
+	uint8_t Axes;      //See below for possbile axes                           
+}LSM9DS1_InitTypeDef;
 
 
-#define SCALE_2G 0x00 
-#define SCALE_4G 0x10
-#define SCALE_8G 0x18 // 011 01 000
-#define SCALE_16G 0x10
+/** Accelerometer **/
+#define XL_DATA_RATE_10Hz 0x20
+#define XL_DATA_RATE_50Hz 0x40
+#define XL_DATA_RATE_119Hz 0x60
+#define XL_DATA_RATE_238Hz 0x80
+#define XL_DATA_RATE_476Hz 0xA0
+#define XL_DATA_RATE_952Hz 0xC0
 
-#define DATA_RATE_119Hz 0x60
+#define XL_ENABLE_X 0x08
+#define XL_ENABLE_Y 0x10
+#define XL_ENABLE_Z 0x20
 
-#define ACC_ENABLE_X 0x08
-#define ACC_ENABLE_Y 0x10
-#define ACC_ENABLE_Z 0x20
+#define XL_SCALE_2G 0x00 
+#define XL_SCALE_4G 0x10
+#define XL_SCALE_8G 0x18 
+#define XL_SCALE_16G 0x08
 
+#define XL_SENSITIVITY_2G    	0.061 		      
+#define XL_SENSITIVITY_4G		  0.122			  
+#define XL_SENSITIVITY_8G		  0.244	   	 
+#define XL_SENSITIVITY_16G    	0.732 
+/** END ACCELEROMETER **/
+
+/** REGISTER MAPPING **/
 #define LSM9DS1_ACT_THS	0x04
 #define LSM9DS1_ACT_DUR	0x05
 #define LSM9DS1_INT_GEN_CFG_XL	0x06
@@ -31,6 +42,28 @@
 #define	LSM9DS1_INT_GEN_THS_Z_XL	0x09
 #define	LSM9DS1_INT_GEN_DUR_XL	0x0A
 #define	LSM9DS1_REFERENCE_G	0x0B
+/**
+	INT1_CTRL: INT1_A/G pin control register.
+	
+	INT1_IG_G | INT1_IG_XL | INT1_FSS5 | INT1_OVR | INT1_FTH | INT1_Boot | INT1_DRDY_G | INT1_DRDY_XL
+
+	INT1_IG_G: Gyroscope interrupt enable on INT 1_A/G pin. Default value: 0
+						(0: disabled; 1: enabled)
+	INT_ IG_XL Accelerometer interrupt generator on INT 1_A/G pin. Default value: 0
+						(0: disabled; 1: enabled)
+	INT_ FSS5 FSS5 interrupt enable on INT 1_A/G pin. Default value: 0
+						(0: disabled; 1: enabled)
+	INT_OVR: Overrun interrupt on INT 1_A/G pin. Default value: 0
+						(0: disabled; 1: enabled)
+	INT_FTH: FIFO threshold interrupt on INT 1_A/G pin. Default value: 0
+						(0: disabled; 1: enabled)
+	INT_ Boot: Boot status available on INT 1_A/G pin. Default value: 0
+						(0: disabled; 1: enabled)
+	INT_DRDY_G: Gyroscope data ready on INT 1_A/G pin. Default value: 0
+						(0: disabled; 1: enabled)
+	INT_DRDY_XL: Accelerometer data ready on INT 1_A/G pin. Default value: 0
+						(0: disabled; 1: enabled)
+*/
 #define	LSM9DS1_INT1_CTRL	0x0C
 #define	LSM9DS1_INT2_CTRL	0x0D
 #define	LSM9DS1_WHO_AM_I	0x0F
@@ -50,13 +83,62 @@
 #define	LSM9DS1_OUT_Z_H_G	0x1D
 
 /**
-	CTRL_REG4 
-	0 0 
-
+	CTRL_REG4: Control Register 4
+	
+	0 | 0 | Zen_G | Yen_G | Xen_G | 0 | LIR_XL1 | 4D_XL1
+	
+	Zen_G: Gyroscope’s Yaw axis (Z) output enable. Default value: 1
+				(0: Z-axis output disabled; 1: Z-axis output enabled)
+	Yen_G: Gyroscope’s roll axis (Y) output enable. Default value: 1
+				(0: Y-axis output disabled; 1: Y-axis output enabled)
+	Xen_G: Gyroscope’s pitch axis (X) output enable. Default value: 1
+				(0: X -xis output disabled; 1: X-axis output enabled)
+	LIR_XL1: Latched Interrupt. Default value: 0
+				(0: interrupt request not latched; 1: interrupt request latched)
+	4D_XL1: 4D option enabled on Interrupt. Default value: 0
+				(0: interrupt generator uses 6D for position recognition; 1: interrupt generator uses
+				4D for position recognition)
 */
 #define	LSM9DS1_CTRL_REG4	0x1E
+
+/**
+	CTRL_REG5_XL: Linear acceleration sensor Control Register 5.
+	
+	DEC_1 | DEC_0 | Zen_XL | Yen_XL | Xen_XL | 0 | 0 | 0
+	
+	DEC_ [0:1]: Decimation of acceleration data on OUT REG and FIFO. Default value: 00
+				00: no decimation;
+				01: update every 2 samples;
+				10: update every 4 samples;
+				11: update every 8 samples
+	Zen_XL: Accelerometer’s Z-axis output enable. Default value: 1
+				(0: Z-axis output disabled; 1: Z-axis output enabled)
+	Yen_XL: Accelerometer’s Y-axis output enable. Default value: 1
+				(0: Y-axis output disabled; 1: Y-axis output enabled)
+	Xen_XL: Accelerometer’s X-axis output enable. Default value: 1
+				(0: X-axis output disabled; 1: X-axis output enabled)
+*/
 #define	LSM9DS1_CTRL_REG5_XL	0x1F
+/**
+	CTRL_REG6_XL: Linear acceleration sensor Control Register 6.
+	
+	ODR_XL2 | ODR_XL1 | ODR_XL0 | FS1_XL | FS0_XL | BW_SCAL_ODR | BW_XL1 | BW_XL0
+	
+	ODR_XL[2:0] Output data rate and power mode selection. default value: 000 (see Table 68)
+	FS_XL[1:0] Accelerometer full-scale selection. Default value: 00
+						(00: ±2g; 01: ±16 g; 10: ±4 g; 11: ±8 g)
+	BW_SCAL_ODR Bandwidth selection. Default value: 0
+						(0: bandwidth determined by ODR selection:
+						BW = 408 Hz when ODR = 952 Hz, 50 Hz, 10 Hz;
+						BW = 211 Hz when ODR = 476 Hz;
+						BW = 105 Hz when ODR = 238 Hz;
+						BW = 50 Hz when ODR = 119 Hz;
+						1: bandwidth selected according to BW_XL [2:1] selection)
+	BW_XL[1:0]: Anti-aliasing filter bandwidth selection. Default value: 00
+						(00: 408 Hz; 01: 211 Hz; 10: 105 Hz; 11: 50 Hz)
+*/
 #define	LSM9DS1_CTRL_REG6_XL	0x20
+
 #define	LSM9DS1_CTRL_REG7_XL	0x21
 #define	LSM9DS1_CTRL_REG8	0x22
 #define	LSM9DS1_CTRL_REG9	0x23
@@ -79,14 +161,20 @@
 #define	LSM9DS1_INT_GEN_THS_ZH_G	0x35
 #define	LSM9DS1_INT_GEN_THS_ZL_G	0x36
 #define	LSM9DS1_INT_GEN_DUR_G	0x37
-
+/** END REGISTER MAPPING **/
 
 /** SPI INTERFACE **/
 #define LSM9DS1_FLAG_TIMEOUT         ((uint32_t)0x1000)
+#define LSM9DS1_CS_LOW()       GPIO_ResetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN)
+#define LSM9DS1_CS_HIGH()      GPIO_SetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN)
 
-/**
-  * @brief  LSM9DS1 SPI Interface pins
-  */
+/* Read/Write command */
+#define READWRITE_CMD              ((uint8_t)0x80) 
+/* Multiple byte read/write command */ 
+#define MULTIPLEBYTE_CMD           ((uint8_t)0x40)
+/* Dummy Byte Send by the SPI Master device in order to generate the Clock to the Slave device */
+#define DUMMY_BYTE                 ((uint8_t)0x00)
+
 #define LSM9DS1_SPI                       SPI1
 #define LSM9DS1_SPI_CLK                   RCC_APB2Periph_SPI1
 
@@ -131,19 +219,14 @@
 #define LSM9DS1_SPI_INT2_EXTI_PORT_SOURCE EXTI_PortSourceGPIOE
 #define LSM9DS1_SPI_INT2_EXTI_PIN_SOURCE  EXTI_PinSource1
 #define LSM9DS1_SPI_INT2_EXTI_IRQn        EXTI1_IRQn 
+/** END SPI INTERFACE **/
 
 
-#define LIS3DSH_SENSITIVITY_2G    	0.061 		      
-#define LIS3DSH_SENSITIVITY_4G		  0.122			  
-#define LIS3DSH_SENSITIVITY_8G		  0.244	   	 
-#define LIS3DSH_SENSITIVITY_16G    	0.732 
-
-
-
+/** FUNCTION PROTOTYPES **/
 void LSM9DS1_ReadACC(int32_t* out);
 void LSM9DS1_Write(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite);
 void LSM9DS1_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead);
 uint8_t LSM9DS1_SendByte(uint8_t byte);
-void LSM9DS1_Init(void);
-
+void LSM9DS1_Init(LSM9DS1_InitTypeDef* init);
+/** END FUNCTION PROTOTYPES **/
 

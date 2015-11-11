@@ -8,6 +8,10 @@
 #include "stm32f4xx_conf.h"
 #include <stdio.h>
 
+#include "lsm9ds1_test.h"
+#include "lsm9ds1.h"
+
+
 void Blinky_GPIO_Init(void){
 	GPIO_InitTypeDef GPIO_InitStructure;
 	
@@ -32,23 +36,87 @@ void Blinky(void const *argument){
 
 osThreadDef(Blinky, osPriorityNormal, 1, 0);
 
+/**
+	@brief Initializes the interrupts and interrupt handler for the accelerometer 
+*/
+void init_interrupts(void){
+		GPIO_InitTypeDef GPIO_InitStruct;
+    EXTI_InitTypeDef EXTI_InitStruct;
+    NVIC_InitTypeDef NVIC_InitStruct;
+    
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, ENABLE); // Enable 
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE); // Enable Syscfg clock
+    
+    // Set GPIO pin as input for receiving acceleromter data 
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_0;
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
+    GPIO_Init(GPIOE, &GPIO_InitStruct);
+    
+    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOE, EXTI_PinSource0); // Using PE0 for EXTI_Line0     
+    EXTI_InitStruct.EXTI_Line = EXTI_Line0; // PE0 is connected to EXTI_Line0 
+    EXTI_InitStruct.EXTI_LineCmd = ENABLE; // Enable interrupt
+    EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt; // Set to interrupt mode
+    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising; //Triggers on rising edge
+    EXTI_Init(&EXTI_InitStruct); // Initialize the external interrupt
+ 
+    // Add IRQ vector to NVIC 
+    NVIC_InitStruct.NVIC_IRQChannel = EXTI0_IRQn; // PE0 is connected to EXTI_Line0, which has EXTI0_IRQn vector 
+    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE; // Enable interrupt 
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 0x00; // Set priority
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0x00; // Set sub priority
+    NVIC_Init(&NVIC_InitStruct); // Add to the NVIC
+		printf("interrupt init complete\n");
+}
+
+
+/**
+	@brief Handler for when data is available from the accelerometer
+*/
+void EXTI0_IRQHandler(void){
+	if(EXTI_GetITStatus(EXTI_Line0) != RESET){
+			EXTI_ClearITPendingBit(EXTI_Line0); // Clear the interrupt pending bit
+			int32_t accelerometer_out[3];
+			LSM9DS1_ReadACC(accelerometer_out); // Read the accelerometers data
+			printf("ACC %d %d %d\n", accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]);
+	}
+}
+
 /*
  * main: initialize and start the system
  */
 int main (void) {
-  osKernelInitialize ();                    // initialize CMSIS-RTOS
 	
-	// ID for thread
-	osThreadId	Blinky_thread;
+	LSM9DS1_InitTypeDef init;
+	init.DataRate = XL_DATA_RATE_119Hz;
+	init.Axes = XL_ENABLE_X | XL_ENABLE_Y | XL_ENABLE_Z;
+	init.Scale = XL_SCALE_2G;
+	LSM9DS1_Init(&init);	
 	
-  // initialize peripherals here
-	Blinky_GPIO_Init();
-	
-  // create 'thread' functions that start executing,
-  // example: tid_name = osThreadCreate (osThread(name), NULL);
-	Blinky_thread = osThreadCreate(osThread(Blinky), NULL);
-	
-	osKernelStart ();                         // start thread execution 
+	//Enable interrupts
+	uint8_t interrupts = 0x01; 
+	LSM9DS1_Write(&interrupts,LSM9DS1_INT1_CTRL, 1);
+
+	init_interrupts();
+	EXTI_GenerateSWInterrupt(EXTI_Line0); 
+	while(1){
+	}
+
+//  osKernelInitialize ();                    // initialize CMSIS-RTOS
+//	
+//	// ID for thread
+//	osThreadId	Blinky_thread;
+//	
+//  // initialize peripherals here
+//	Blinky_GPIO_Init();
+//	
+//  // create 'thread' functions that start executing,
+//  // example: tid_name = osThreadCreate (osThread(name), NULL);
+//	Blinky_thread = osThreadCreate(osThread(Blinky), NULL);
+//	
+//	osKernelStart ();                         // start thread execution 
 }
 
 
