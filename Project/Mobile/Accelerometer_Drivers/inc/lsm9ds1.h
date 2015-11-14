@@ -4,13 +4,23 @@
 /** LSM9DS1 Init **/
 typedef struct
 {
-  uint8_t DataRate;  //See below for possible data rates             
-	uint8_t Scale;  					 //See below for possbile scales
-	uint8_t Axes;      //See below for possbile axes                           
+  uint8_t XL_DataRate;             
+	uint8_t XL_Scale;  					
+	uint8_t XL_Axes;        
+	uint8_t G_DataRate;               
+	uint8_t G_Scale;  					
+	uint8_t G_Axes;        	
 }LSM9DS1_InitTypeDef;
 
+/** LSM9DS1 Interrupt Init **/
+typedef struct
+{
+  uint8_t type;             
+	uint8_t pin;  					       	
+}LSM9DS1_InterruptInitTypeDef;
 
-/** Accelerometer **/
+
+/** ACCELEROMETER **/
 #define XL_DATA_RATE_10Hz 0x20
 #define XL_DATA_RATE_50Hz 0x40
 #define XL_DATA_RATE_119Hz 0x60
@@ -32,6 +42,32 @@ typedef struct
 #define XL_SENSITIVITY_8G		  0.244	   	 
 #define XL_SENSITIVITY_16G    	0.732 
 /** END ACCELEROMETER **/
+
+/** GYROSCOPE **/
+//ctrl reg1_g
+#define G_DATA_RATE_14_9 0x20
+#define G_DATA_RATE_59_5 0x40
+#define G_DATA_RATE_119 0x60
+#define G_DATA_RATE_238 0x80
+#define G_DATA_RATE_476 0xA0
+#define G_DATA_RATE_952 0xC0
+
+#define G_SCALE_245_DPS 0x00
+#define G_SCALE_500_DPS 0x08
+#define G_SCALE_2000_DPS 0x18
+
+#define G_SENSITIVITY_245_DPS 8.75
+#define G_SENSITIVITY_500_DPS 17.5
+#define G_SENSITIVITY_2000_DPS 70
+
+//Ctrl reg 4
+#define G_ENABLE_X 0x08
+#define G_ENABLE_Y 0x10
+#define G_ENABLE_Z 0x20
+/** END GYROSCOPE **/
+
+/** INTERRUPT **/
+
 
 /** REGISTER MAPPING **/
 #define LSM9DS1_ACT_THS	0x04
@@ -67,6 +103,18 @@ typedef struct
 #define	LSM9DS1_INT1_CTRL	0x0C
 #define	LSM9DS1_INT2_CTRL	0x0D
 #define	LSM9DS1_WHO_AM_I	0x0F
+/**
+	CTRL_REG1_G: Angular rate sensor Control Register 1.
+	
+	ODR_G2 | ODR_G1 | ODR_G0 | FS_G1 | FS_G0 | 0 | BW_G1 | BW_G0
+	
+	ODR_G [2:0]: Gyroscope output data rate selection. Default value: 000, use #defines above
+	FS_G [1:0]: Gyroscope full-scale selection. Default value: 00
+						(00: 245 dps; 01: 500 dps; 10: Not Available; 11: 2000 dps)
+	BW_G [1:0]: Gyroscope bandwidth selection. Default value: 00
+
+
+*/
 #define	LSM9DS1_CTRL_REG1_G	0x10
 #define	LSM9DS1_CTRL_REG2_G	0x11
 #define	LSM9DS1_CTRL_REG3_G	0x12
@@ -124,7 +172,7 @@ typedef struct
 	
 	ODR_XL2 | ODR_XL1 | ODR_XL0 | FS1_XL | FS0_XL | BW_SCAL_ODR | BW_XL1 | BW_XL0
 	
-	ODR_XL[2:0] Output data rate and power mode selection. default value: 000 (see Table 68)
+	ODR_XL[2:0] Output data rate and power mode selection. default value: 000, use #defines above
 	FS_XL[1:0] Accelerometer full-scale selection. Default value: 00
 						(00: ±2g; 01: ±16 g; 10: ±4 g; 11: ±8 g)
 	BW_SCAL_ODR Bandwidth selection. Default value: 0
@@ -138,7 +186,6 @@ typedef struct
 						(00: 408 Hz; 01: 211 Hz; 10: 105 Hz; 11: 50 Hz)
 */
 #define	LSM9DS1_CTRL_REG6_XL	0x20
-
 #define	LSM9DS1_CTRL_REG7_XL	0x21
 #define	LSM9DS1_CTRL_REG8	0x22
 #define	LSM9DS1_CTRL_REG9	0x23

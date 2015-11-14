@@ -78,9 +78,10 @@ void init_interrupts(void){
 void EXTI0_IRQHandler(void){
 	if(EXTI_GetITStatus(EXTI_Line0) != RESET){
 			EXTI_ClearITPendingBit(EXTI_Line0); // Clear the interrupt pending bit
-			int32_t accelerometer_out[3];
-			LSM9DS1_ReadACC(accelerometer_out); // Read the accelerometers data
-			printf("ACC %d %d %d\n", accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]);
+			int32_t accelerometer_out[3], gyro_out[3];
+			LSM9DS1_Read_XL(accelerometer_out); 
+			LSM9DS1_Read_G(gyro_out);
+			printf("ACC %d %d %d GYRO %d %d %d\n", accelerometer_out[0], accelerometer_out[1], accelerometer_out[2], gyro_out[0], gyro_out[1], gyro_out[2]);
 	}
 }
 
@@ -90,15 +91,19 @@ void EXTI0_IRQHandler(void){
 int main (void) {
 	
 	LSM9DS1_InitTypeDef init;
-	init.DataRate = XL_DATA_RATE_119Hz;
-	init.Axes = XL_ENABLE_X | XL_ENABLE_Y | XL_ENABLE_Z;
-	init.Scale = XL_SCALE_2G;
+	init.XL_DataRate = XL_DATA_RATE_119Hz;
+	init.XL_Axes = XL_ENABLE_X | XL_ENABLE_Y | XL_ENABLE_Z;
+	init.XL_Scale = XL_SCALE_2G;
+	init.G_DataRate = G_DATA_RATE_119;
+	init.G_Axes = G_ENABLE_X | G_ENABLE_Y | G_ENABLE_Z;
+	init.G_Scale =  G_SCALE_500_DPS;
 	LSM9DS1_Init(&init);	
 	
+	
 	//Enable interrupts
-	uint8_t interrupts = 0x01; 
+	uint8_t interrupts = 0x02; //enable both accelerometer and gyro 
 	LSM9DS1_Write(&interrupts,LSM9DS1_INT1_CTRL, 1);
-
+	print_all_ctrl_regs();
 	init_interrupts();
 	EXTI_GenerateSWInterrupt(EXTI_Line0); 
 	while(1){

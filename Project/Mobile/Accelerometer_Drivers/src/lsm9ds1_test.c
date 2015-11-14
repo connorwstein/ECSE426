@@ -34,6 +34,10 @@ void print_all_ctrl_regs(void){
 	LSM9DS1_Read(&read, LSM9DS1_CTRL_REG6_XL, 1);
 	printf("LSM9DS1_CTRL_REG6_XL: %d\n", read);
 
+	read = 0;
+	LSM9DS1_Read(&read, LSM9DS1_CTRL_REG1_G, 1);
+	printf("LSM9DS1_CTRL_REG1_G: %d\n", read);
+	
 	
 	//Interrupts
 	read = 0;
@@ -57,7 +61,7 @@ int read_acc_test(void){
 	
 
 	int32_t accelerometer_data[3];
-	LSM9DS1_ReadACC(accelerometer_data);
+	LSM9DS1_Read_XL(accelerometer_data);
 	printf("ACC %d %d %d\n", accelerometer_data[0], accelerometer_data[1], accelerometer_data[2]);
 	return 0;
 }

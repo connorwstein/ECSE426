@@ -8,14 +8,13 @@ __IO uint32_t  LSM9DS1Timeout = LSM9DS1_FLAG_TIMEOUT;
 
 /**
   * @brief  Read LSM9DS1 output register, and calculate the acceleration 
-  *         ACC[mg]=SENSITIVITY* (out_h*256+out_l)/16 (12 bit rappresentation)
-  * @param  s16 buffer to store data
+  * @param  3 32bit int buffer to store data
   * @retval None
   */
-void LSM9DS1_ReadACC(int32_t* out)
+void LSM9DS1_Read_XL(int32_t* out)
 {
   uint8_t buffer[6];
-  uint8_t crtl, i = 0x00;
+  uint8_t crtl, i;
    
   LSM9DS1_Read(&crtl, LSM9DS1_CTRL_REG6_XL, 1); 
 	LSM9DS1_Read(buffer, LSM9DS1_OUT_X_H_XL, 1);	
@@ -25,15 +24,13 @@ void LSM9DS1_ReadACC(int32_t* out)
 	LSM9DS1_Read(buffer+4, LSM9DS1_OUT_Z_H_XL, 1);
 	LSM9DS1_Read(buffer+5, LSM9DS1_OUT_Z_L_XL, 1);
 	switch(crtl & 0x18) 
-    {
-    /* FS bit = 0 ==> Sensitivity typical value = 18milligals/digit*/ 
+  {
     case XL_SCALE_2G:
       for(i = 0; i < 6; i+=2){
         *out =(int32_t)(XL_SENSITIVITY_2G * (int16_t)(buffer[i+1]+(buffer[i]<<8)));
         out++;
       }
-      break;
-    /* FS bit = 1 ==> Sensitivity typical value = 72milligals/digit*/ 
+      break; 
     case XL_SCALE_16G:
       for(i = 0; i < 6; i+=2){
         *out =(int32_t)(XL_SENSITIVITY_16G * (int16_t)(buffer[i+1]+(buffer[i]<<8)));
@@ -46,20 +43,58 @@ void LSM9DS1_ReadACC(int32_t* out)
         out++;
       }
       break;    
-      break;
 		case XL_SCALE_8G:
 			for(i = 0; i < 6; i+=2){
         *out =(int32_t)(XL_SENSITIVITY_8G * (int16_t)(buffer[i+1]+(buffer[i]<<8)));
         out++;
       }
       break;      
-      break;
     default:
       break;
     }
 }
 
-
+/**
+  * @brief  Read LSM9DS1 output register, and calculate the angular velocity 
+  * @param  3 32bit int buffer to store data
+  * @retval None
+  */
+void LSM9DS1_Read_G(int32_t* out){
+	uint8_t buffer[6];
+	uint8_t crtl, i;
+	 
+	LSM9DS1_Read(&crtl, LSM9DS1_CTRL_REG1_G, 1); 
+	LSM9DS1_Read(buffer, LSM9DS1_OUT_X_H_XL, 1);	
+	LSM9DS1_Read(buffer+1, LSM9DS1_OUT_X_L_G, 1);
+	LSM9DS1_Read(buffer+2, LSM9DS1_OUT_Y_H_G, 1);
+	LSM9DS1_Read(buffer+3, LSM9DS1_OUT_Y_L_G, 1);
+	LSM9DS1_Read(buffer+4, LSM9DS1_OUT_Z_H_G, 1);
+	LSM9DS1_Read(buffer+5, LSM9DS1_OUT_Z_L_G, 1);
+	switch(crtl & 0x18) 
+  {
+    case G_SCALE_245_DPS:
+      for(i = 0; i < 6; i+=2){
+        *out =(int32_t)(G_SENSITIVITY_245_DPS * (int16_t)(buffer[i+1]+(buffer[i]<<8)));
+        out++;
+      }
+      break;
+    case G_SCALE_500_DPS:
+      for(i = 0; i < 6; i+=2){
+        *out =(int32_t)(G_SENSITIVITY_500_DPS * (int16_t)(buffer[i+1]+(buffer[i]<<8)));
+        out++;
+      }
+      break;
+		case G_SCALE_2000_DPS:
+      for(i = 0; i < 6; i+=2){
+        *out =(int32_t)(G_SENSITIVITY_2000_DPS * (int16_t)(buffer[i+1]+(buffer[i]<<8)));
+        out++;
+      }
+      break;   
+    default:
+      break;
+  }
+	
+}
 
 
 /**
@@ -169,13 +204,21 @@ void LSM9DS1_Init(LSM9DS1_InitTypeDef *init)
 	// Configure the low level interface 
   LSM9DS1_LowLevel_Init();
 	
-	// Configure data rate and scale
-  uint8_t ctrl_reg_5_xl = init->DataRate | init->Scale; 
+	// Configure acclerometer data rate and scale
+  uint8_t ctrl_reg_5_xl = init->XL_DataRate | init->XL_Scale; 
 	LSM9DS1_Write(&ctrl_reg_5_xl,LSM9DS1_CTRL_REG6_XL, 1);
 	
-	// Configure axes
-	uint8_t ctrl_reg_6_xl = init->Axes; 
+	// Configure accelerometer axes
+	uint8_t ctrl_reg_6_xl = init->XL_Axes; 
 	LSM9DS1_Write(&ctrl_reg_6_xl,LSM9DS1_CTRL_REG5_XL, 1);
+	
+	// Configure gyro data rate and scale
+  uint8_t ctrl_reg1_g = init->G_DataRate | init->G_Scale; 
+	LSM9DS1_Write(&ctrl_reg1_g,LSM9DS1_CTRL_REG1_G, 1);
+	
+	// Configure gyro axes
+	uint8_t ctrl_reg_4 = init->G_Axes; 
+	LSM9DS1_Write(&ctrl_reg_4,LSM9DS1_CTRL_REG4, 1);
   
 }
 
