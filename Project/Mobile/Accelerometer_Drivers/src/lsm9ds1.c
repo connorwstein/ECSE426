@@ -64,7 +64,7 @@ void LSM9DS1_Read_G(int32_t* out){
 	uint8_t crtl, i;
 	 
 	LSM9DS1_Read(&crtl, LSM9DS1_CTRL_REG1_G, 1); 
-	LSM9DS1_Read(buffer, LSM9DS1_OUT_X_H_XL, 1);	
+	LSM9DS1_Read(buffer, LSM9DS1_OUT_X_H_G, 1);	
 	LSM9DS1_Read(buffer+1, LSM9DS1_OUT_X_L_G, 1);
 	LSM9DS1_Read(buffer+2, LSM9DS1_OUT_Y_H_G, 1);
 	LSM9DS1_Read(buffer+3, LSM9DS1_OUT_Y_L_G, 1);

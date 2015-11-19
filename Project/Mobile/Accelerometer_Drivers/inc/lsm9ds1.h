@@ -1,3 +1,6 @@
+#ifndef __LSM9DS1_H
+#define __LSM9DS1_H
+
 #include "stm32f4xx.h"
 #include "stm32f4xx_conf.h"
 
@@ -7,17 +10,11 @@ typedef struct
   uint8_t XL_DataRate;             
 	uint8_t XL_Scale;  					
 	uint8_t XL_Axes;        
-	uint8_t G_DataRate;               
+  uint8_t G_DataRate;               
 	uint8_t G_Scale;  					
-	uint8_t G_Axes;        	
+	uint8_t G_Axes;  
 }LSM9DS1_InitTypeDef;
 
-/** LSM9DS1 Interrupt Init **/
-typedef struct
-{
-  uint8_t type;             
-	uint8_t pin;  					       	
-}LSM9DS1_InterruptInitTypeDef;
 
 
 /** ACCELEROMETER **/
@@ -270,10 +267,13 @@ typedef struct
 
 
 /** FUNCTION PROTOTYPES **/
-void LSM9DS1_ReadACC(int32_t* out);
+void LSM9DS1_Read_XL(int32_t* out);
+void LSM9DS1_Read_G(int32_t* out);
 void LSM9DS1_Write(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite);
 void LSM9DS1_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead);
 uint8_t LSM9DS1_SendByte(uint8_t byte);
 void LSM9DS1_Init(LSM9DS1_InitTypeDef* init);
+
 /** END FUNCTION PROTOTYPES **/
 
+#endif

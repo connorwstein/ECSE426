@@ -10,36 +10,45 @@
 
 #include "lsm9ds1_test.h"
 #include "lsm9ds1.h"
+#include "sensor.h"
 
+int32_t accelerometer_out[3], gyro_out[3];
+void sensor_reader(void const *argument);
 
-void Blinky_GPIO_Init(void){
-	GPIO_InitTypeDef GPIO_InitStructure;
-	
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+osThreadId sensor_reader_thread;
+osThreadDef(sensor_reader, osPriorityNormal, 1, 1000);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13| GPIO_Pin_14| GPIO_Pin_15;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOD, &GPIO_InitStructure);
-	
-}
+/**
+	@brief Handler for when data is available from the accelerometer
+*/
+void EXTI0_IRQHandler(void){
+	if(EXTI_GetITStatus(EXTI_Line0) != RESET){
+			EXTI_ClearITPendingBit(EXTI_Line0); // Clear the interrupt pending bit
+			LSM9DS1_Read_XL(accelerometer_out); 
+			LSM9DS1_Read_G(gyro_out);
+			
+			printf("ACC %d %d %d GYRO %d %d %d\n", accelerometer_out[0], accelerometer_out[1], accelerometer_out[2], gyro_out[0], gyro_out[1], gyro_out[2]);
 
-void Blinky(void const *argument){
-	while(1){
-		GPIO_ToggleBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
-		printf("hello world\n");
-		osDelay(250);
+		  osSignalSet(sensor_reader_thread,1);
 	}
 }
 
-osThreadDef(Blinky, osPriorityNormal, 1, 0);
+void sensor_reader(void const *argument){
+	
+	while(1){
+		osSignalWait(1,osWaitForever);
+		update_moving_average_xl(accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]); // Update the global structures in accelerometer.c
+		update_moving_average_g(gyro_out[0], gyro_out[1], gyro_out[2]);
+		printf("ACC %d %d %d GYRO %d %d %d\n", accelerometer_out[0], accelerometer_out[1], accelerometer_out[2], gyro_out[0], gyro_out[1], gyro_out[2]);
 
+	}
+}
 /**
 	@brief Initializes the interrupts and interrupt handler for the accelerometer 
 */
-void init_interrupts(void){
+void init_EXT10_interrupts(void){
+			
+	
 		GPIO_InitTypeDef GPIO_InitStruct;
     EXTI_InitTypeDef EXTI_InitStruct;
     NVIC_InitTypeDef NVIC_InitStruct;
@@ -69,59 +78,30 @@ void init_interrupts(void){
     NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0x00; // Set sub priority
     NVIC_Init(&NVIC_InitStruct); // Add to the NVIC
 		printf("interrupt init complete\n");
+		
+		
 }
 
 
-/**
-	@brief Handler for when data is available from the accelerometer
-*/
-void EXTI0_IRQHandler(void){
-	if(EXTI_GetITStatus(EXTI_Line0) != RESET){
-			EXTI_ClearITPendingBit(EXTI_Line0); // Clear the interrupt pending bit
-			int32_t accelerometer_out[3], gyro_out[3];
-			LSM9DS1_Read_XL(accelerometer_out); 
-			LSM9DS1_Read_G(gyro_out);
-			printf("ACC %d %d %d GYRO %d %d %d\n", accelerometer_out[0], accelerometer_out[1], accelerometer_out[2], gyro_out[0], gyro_out[1], gyro_out[2]);
-	}
-}
+
 
 /*
  * main: initialize and start the system
  */
 int main (void) {
 	
-	LSM9DS1_InitTypeDef init;
-	init.XL_DataRate = XL_DATA_RATE_119Hz;
-	init.XL_Axes = XL_ENABLE_X | XL_ENABLE_Y | XL_ENABLE_Z;
-	init.XL_Scale = XL_SCALE_2G;
-	init.G_DataRate = G_DATA_RATE_119;
-	init.G_Axes = G_ENABLE_X | G_ENABLE_Y | G_ENABLE_Z;
-	init.G_Scale =  G_SCALE_500_DPS;
-	LSM9DS1_Init(&init);	
+	//osKernelInitialize();                    // initialize CMSIS-RTOS
 	
+	init_sensor();
+	init_EXT10_interrupts();
 	
-	//Enable interrupts
-	uint8_t interrupts = 0x02; //enable both accelerometer and gyro 
-	LSM9DS1_Write(&interrupts,LSM9DS1_INT1_CTRL, 1);
-	print_all_ctrl_regs();
-	init_interrupts();
-	EXTI_GenerateSWInterrupt(EXTI_Line0); 
-	while(1){
-	}
+	EXTI_GenerateSWInterrupt(EXTI_Line0);	// start thread execution 
+	
+	//sensor_reader_thread = osThreadCreate(osThread(sensor_reader),NULL);
+	
+	//osKernelStart();   
 
-//  osKernelInitialize ();                    // initialize CMSIS-RTOS
-//	
-//	// ID for thread
-//	osThreadId	Blinky_thread;
-//	
-//  // initialize peripherals here
-//	Blinky_GPIO_Init();
-//	
-//  // create 'thread' functions that start executing,
-//  // example: tid_name = osThreadCreate (osThread(name), NULL);
-//	Blinky_thread = osThreadCreate(osThread(Blinky), NULL);
-//	
-//	osKernelStart ();                         // start thread execution 
+
 }
 
 
