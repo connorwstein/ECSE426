@@ -8,16 +8,17 @@
   ****************************************************************************** 
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "stm32f4xx.h"                  // Device header
 #include "stm32f4xx_conf.h"
 
 #include "sensor.h"
-#include "moving_average.h"
+//#include "moving_average.h"
 
 #define NUM_MG_PER_G 1000
-#define BUFFER_DEPTH_XL 50
-#define BUFFER_DEPTH_G 50
+#define BUFFER_DEPTH_XL 10
+#define BUFFER_DEPTH_G 10
 #define PI 3.14159265358
 
 #define ACC11 1 
@@ -31,29 +32,67 @@
 #define ACC31 0
 #define ACC32 0
 #define ACC33 1
-#define ACC30 70 //Add to the z 
+#define ACC30 0 //Add to the z 
 
 #define GYR11 1 
 #define GYR12 0 
 #define GYR13 0
-#define GYR10 0 //Add to x
+#define GYR10 1800 //Add to x
 #define GYR21 0
 #define GYR22 1
 #define GYR23 0
-#define GYR20 0 //Add to y
+#define GYR20 -5500 //Add to y
 #define GYR31 0
 #define GYR32 0
 #define GYR33 1
-#define GYR30 0 //Add to the z 
+#define GYR30 -750 //Add to the z 
 
 #define DEGREES(x) (180.0*x/PI)
 
-moving_average_buffer Ax1_moving_average;
-moving_average_buffer Ay1_moving_average;
-moving_average_buffer Az1_moving_average;
-moving_average_buffer Gx1_moving_average;
-moving_average_buffer Gy1_moving_average;
-moving_average_buffer Gz1_moving_average;
+typedef struct{
+	float data[BUFFER_DEPTH_XL];
+	int index;
+	float sum;
+} xl_buffer;
+
+typedef struct{
+	float data[BUFFER_DEPTH_G];
+	int index;
+	float sum;
+} g_buffer;
+
+xl_buffer Ax1_moving_average, Ay1_moving_average, Az1_moving_average;
+g_buffer Gx1_moving_average, Gy1_moving_average, Gz1_moving_average;
+
+void update_g_buffer(float new_reading, g_buffer* m_a){
+	int current_index=m_a->index % BUFFER_DEPTH_G;
+	float old_value=m_a->data[current_index];
+	m_a->sum-=old_value;
+	m_a->data[current_index]=new_reading;
+	m_a->sum+=new_reading;
+	m_a->index++;
+}
+
+void update_xl_buffer(float new_reading, xl_buffer* m_a){	
+	int current_index=m_a->index % BUFFER_DEPTH_XL;
+	float old_value=m_a->data[current_index];
+	m_a->sum-=old_value;
+	m_a->data[current_index]=new_reading;
+	m_a->sum+=new_reading;
+	m_a->index++;
+
+}
+
+void init_xl_buffer(xl_buffer* buffer){
+	memset(buffer->data, 0, BUFFER_DEPTH_XL*sizeof(float));
+	buffer->index = 0;
+	buffer->sum = 0;	
+}
+void init_g_buffer(g_buffer* buffer){
+	memset(buffer->data, 0, BUFFER_DEPTH_G*sizeof(float));
+	buffer->index = 0;
+	buffer->sum = 0;	
+}
 
 float calculate_pitch_angle(void){
 	float inputAx1, inputAy1, inputAz1;
@@ -81,42 +120,42 @@ float calculate_yaw_angle(void){
 	@brief Updates the buffers for all three axis for the accelerometer
 */
 void update_moving_average_xl(int32_t Ax, int32_t Ay, int32_t Az){
-	update_buffer(Ax*ACC11 + Ay*ACC12 + Az*ACC13 + ACC10,&Ax1_moving_average, BUFFER_DEPTH_XL);
-	update_buffer(Ax*ACC21 + Ay*ACC22 + Az*ACC23 + ACC20,&Ay1_moving_average, BUFFER_DEPTH_XL);
-	update_buffer(Ax*ACC31 + Ay*ACC32 + Az*ACC33 + ACC30,&Az1_moving_average, BUFFER_DEPTH_XL);
+	update_xl_buffer(Ax*ACC11 + Ay*ACC12 + Az*ACC13 + ACC10,&Ax1_moving_average);
+	update_xl_buffer(Ax*ACC21 + Ay*ACC22 + Az*ACC23 + ACC20,&Ay1_moving_average);
+	update_xl_buffer(Ax*ACC31 + Ay*ACC32 + Az*ACC33 + ACC30,&Az1_moving_average);
 }
 
 /**
 	@brief Updates the buffers for all three axis
 */
 void update_moving_average_g(int32_t Gx, int32_t Gy, int32_t Gz){
-	update_buffer(Gx*GYR11 + Gy*GYR12 + Gz*GYR13 + GYR10,&Gx1_moving_average, BUFFER_DEPTH_G);
-	update_buffer(Gx*GYR21 + Gy*GYR22 + Gz*GYR23 + GYR20,&Gy1_moving_average, BUFFER_DEPTH_G);
-	update_buffer(Gx*GYR31 + Gy*GYR32 + Gz*GYR33 + GYR30,&Gz1_moving_average, BUFFER_DEPTH_G);
+	update_g_buffer(Gx*GYR11 + Gy*GYR12 + Gz*GYR13 + GYR10,&Gx1_moving_average);
+	update_g_buffer(Gx*GYR21 + Gy*GYR22 + Gz*GYR23 + GYR20,&Gy1_moving_average);
+	update_g_buffer(Gx*GYR31 + Gy*GYR32 + Gz*GYR33 + GYR30,&Gz1_moving_average);
 }
 
-float get_average_Ax1(void){
-	return Ax1_moving_average.sum/BUFFER_DEPTH_XL;
+int get_average_Ax1(void){
+	return (int)Ax1_moving_average.sum/BUFFER_DEPTH_XL;
 }
 
-float get_average_Ay1(void){
-	return Ay1_moving_average.sum/BUFFER_DEPTH_XL;
+int get_average_Ay1(void){
+	return (int)Ay1_moving_average.sum/BUFFER_DEPTH_XL;
 }
 
-float get_average_Az1(void){
-	return Az1_moving_average.sum/BUFFER_DEPTH_XL;
+int get_average_Az1(void){
+	return (int)Az1_moving_average.sum/BUFFER_DEPTH_XL;
 }
 
-float get_average_Gx1(void){
-	return Gx1_moving_average.sum/BUFFER_DEPTH_G;
+int get_average_Gx1(void){
+	return (int)Gx1_moving_average.sum/BUFFER_DEPTH_G;
 }
 
-float get_average_Gy1(void){
-	return Gy1_moving_average.sum/BUFFER_DEPTH_G;
+int get_average_Gy1(void){
+	return (int)Gy1_moving_average.sum/BUFFER_DEPTH_G;
 }
 
-float get_average_Gz1(void){
-	return Gz1_moving_average.sum/BUFFER_DEPTH_G;
+int get_average_Gz1(void){
+	return (int)Gz1_moving_average.sum/BUFFER_DEPTH_G;
 }
 
 void init_sensor(void){
@@ -133,14 +172,14 @@ void init_sensor(void){
 	//Enable interrupts
 	uint8_t interrupts = 0x02; //enable both accelerometer and gyro 
 	LSM9DS1_Write(&interrupts,LSM9DS1_INT1_CTRL, 1);
-	
+
 	// Initialize buffers
-	init_buffer(&Ax1_moving_average, BUFFER_DEPTH_XL);
-	init_buffer(&Ay1_moving_average, BUFFER_DEPTH_XL);
-	init_buffer(&Az1_moving_average, BUFFER_DEPTH_XL);
+	init_xl_buffer(&Ax1_moving_average);
+	init_xl_buffer(&Ay1_moving_average);
+	init_xl_buffer(&Az1_moving_average);
 	
-	init_buffer(&Gx1_moving_average, BUFFER_DEPTH_G);
-	init_buffer(&Gy1_moving_average, BUFFER_DEPTH_G);
-	init_buffer(&Gz1_moving_average, BUFFER_DEPTH_G);
+	init_g_buffer(&Gx1_moving_average);
+	init_g_buffer(&Gy1_moving_average);
+	init_g_buffer(&Gz1_moving_average);
 	
 }

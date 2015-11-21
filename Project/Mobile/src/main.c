@@ -7,16 +7,15 @@
 #include "stm32f4xx.h"                  // Device header
 #include "stm32f4xx_conf.h"
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "lsm9ds1_test.h"
+//#include "lsm9ds1_test.h"
 #include "lsm9ds1.h"
 #include "sensor.h"
 
 int32_t accelerometer_out[3], gyro_out[3];
-void sensor_reader(void const *argument);
 
-osThreadId sensor_reader_thread;
-osThreadDef(sensor_reader, osPriorityNormal, 1, 1000);
+osThreadId	sensor_reader_thread;
 
 /**
 	@brief Handler for when data is available from the accelerometer
@@ -25,11 +24,8 @@ void EXTI0_IRQHandler(void){
 	if(EXTI_GetITStatus(EXTI_Line0) != RESET){
 			EXTI_ClearITPendingBit(EXTI_Line0); // Clear the interrupt pending bit
 			LSM9DS1_Read_XL(accelerometer_out); 
-			LSM9DS1_Read_G(gyro_out);
-			
-			printf("ACC %d %d %d GYRO %d %d %d\n", accelerometer_out[0], accelerometer_out[1], accelerometer_out[2], gyro_out[0], gyro_out[1], gyro_out[2]);
-
-		  osSignalSet(sensor_reader_thread,1);
+			LSM9DS1_Read_G(gyro_out);	
+			osSignalSet(sensor_reader_thread,1);
 	}
 }
 
@@ -39,8 +35,7 @@ void sensor_reader(void const *argument){
 		osSignalWait(1,osWaitForever);
 		update_moving_average_xl(accelerometer_out[0], accelerometer_out[1], accelerometer_out[2]); // Update the global structures in accelerometer.c
 		update_moving_average_g(gyro_out[0], gyro_out[1], gyro_out[2]);
-		printf("ACC %d %d %d GYRO %d %d %d\n", accelerometer_out[0], accelerometer_out[1], accelerometer_out[2], gyro_out[0], gyro_out[1], gyro_out[2]);
-
+		printf("Moving average ACC %d %d %d GYRO %d %d %d\n", get_average_Ax1(), get_average_Ay1(), get_average_Az1(),get_average_Gx1(), get_average_Gy1(), get_average_Gz1());
 	}
 }
 /**
@@ -48,7 +43,6 @@ void sensor_reader(void const *argument){
 */
 void init_EXT10_interrupts(void){
 			
-	
 		GPIO_InitTypeDef GPIO_InitStruct;
     EXTI_InitTypeDef EXTI_InitStruct;
     NVIC_InitTypeDef NVIC_InitStruct;
@@ -83,24 +77,20 @@ void init_EXT10_interrupts(void){
 }
 
 
+osThreadDef(sensor_reader, osPriorityNormal, 1, 2000);
 
 
 /*
  * main: initialize and start the system
  */
 int main (void) {
-	
-	//osKernelInitialize();                    // initialize CMSIS-RTOS
-	
+
+  osKernelInitialize();                    // initialize CMSIS-RTOS
+	sensor_reader_thread = osThreadCreate(osThread(sensor_reader),NULL);
+	osKernelStart(); 
 	init_sensor();
 	init_EXT10_interrupts();
-	
 	EXTI_GenerateSWInterrupt(EXTI_Line0);	// start thread execution 
-	
-	//sensor_reader_thread = osThreadCreate(osThread(sensor_reader),NULL);
-	
-	//osKernelStart();   
-
 
 }
 
