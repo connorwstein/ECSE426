@@ -209,8 +209,10 @@ typedef struct
 
 /** SPI INTERFACE **/
 #define LSM9DS1_FLAG_TIMEOUT         ((uint32_t)0x1000)
-#define LSM9DS1_CS_LOW()       GPIO_ResetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN)
-#define LSM9DS1_CS_HIGH()      GPIO_SetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN)
+#define LSM9DS1_CS_LOW_XL()       GPIO_ResetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN)
+#define LSM9DS1_CS_HIGH_XL()      GPIO_SetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN)
+#define LSM9DS1_CS_LOW_G()       GPIO_ResetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN_G)
+#define LSM9DS1_CS_HIGH_G()      GPIO_SetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN_G)
 
 /* Read/Write command */
 #define READWRITE_CMD              ((uint8_t)0x80) 
@@ -243,10 +245,17 @@ typedef struct
 #define LSM9DS1_SPI_MOSI_AF               GPIO_AF_SPI1
 
 /// REUSE SPI1 but with our own chip select
-// CSA/G --> PD7
+// CSA/G --> PD7 this is for the accelerometer
 #define LSM9DS1_SPI_CS_PIN                GPIO_Pin_7
 #define LSM9DS1_SPI_CS_GPIO_PORT          GPIOD                      
 #define LSM9DS1_SPI_CS_GPIO_CLK           RCC_AHB1Periph_GPIOD
+
+//SPI1  CSA/G --> PD8 for the gyro
+#define LSM9DS1_SPI_CS_PIN_G                GPIO_Pin_8
+
+
+// Need a separate interrupt for the gyro
+// Use pe1
 
 #define LSM9DS1_SPI_INT1_PIN              GPIO_Pin_0                  /* PE.00 */
 #define LSM9DS1_SPI_INT1_GPIO_PORT        GPIOE                       /* GPIOE */
@@ -267,13 +276,15 @@ typedef struct
 
 
 /** FUNCTION PROTOTYPES **/
-void LSM9DS1_Read_XL(int32_t* out);
-void LSM9DS1_Read_G(int32_t* out);
-void LSM9DS1_Write(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite);
-void LSM9DS1_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead);
+//void LSM9DS1_Read_XL(int32_t* out);
+//void LSM9DS1_Read_G(int32_t* out);
+void LSM9DS1_Write_XL(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite);
+void LSM9DS1_Write_G(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite);
+void LSM9DS1_Read_XL(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead);
+void LSM9DS1_Read_G(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead);
 uint8_t LSM9DS1_SendByte(uint8_t byte);
 void LSM9DS1_Init(LSM9DS1_InitTypeDef* init);
-
+void LSM9DS1_LowLevel_Init(void);
 /** END FUNCTION PROTOTYPES **/
 
 #endif

@@ -23,8 +23,8 @@ osThreadId	sensor_reader_thread;
 void EXTI0_IRQHandler(void){
 	if(EXTI_GetITStatus(EXTI_Line0) != RESET){
 			EXTI_ClearITPendingBit(EXTI_Line0); // Clear the interrupt pending bit
-			LSM9DS1_Read_XL(accelerometer_out); 
-			LSM9DS1_Read_G(gyro_out);	
+//			LSM9DS1_Read_XL(accelerometer_out); 
+//			LSM9DS1_Read_G(gyro_out);	
 			osSignalSet(sensor_reader_thread,1);
 	}
 }
@@ -85,13 +85,24 @@ osThreadDef(sensor_reader, osPriorityNormal, 1, 2000);
  */
 int main (void) {
 
-  osKernelInitialize();                    // initialize CMSIS-RTOS
-	sensor_reader_thread = osThreadCreate(osThread(sensor_reader),NULL);
-	osKernelStart(); 
-	init_sensor();
-	init_EXT10_interrupts();
-	EXTI_GenerateSWInterrupt(EXTI_Line0);	// start thread execution 
+//  osKernelInitialize();                    // initialize CMSIS-RTOS
+//	sensor_reader_thread = osThreadCreate(osThread(sensor_reader),NULL);
+//	osKernelStart(); 
+//	init_sensor();
+//	init_EXT10_interrupts();
+//	EXTI_GenerateSWInterrupt(EXTI_Line0);	// start thread execution 
 
+	LSM9DS1_LowLevel_Init(); //should initialize chip select for the gyro board as well
+	GPIO_SetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN_G); //Turn off the gyro
+	GPIO_SetBits(LSM9DS1_SPI_CS_GPIO_PORT, LSM9DS1_SPI_CS_PIN); //Turn off the accel
+	
+	printf("Gyro %d Accel %d\n", GPIO_ReadInputDataBit(LSM9DS1_SPI_CS_GPIO_PORT,LSM9DS1_SPI_CS_PIN_G), GPIO_ReadInputDataBit(LSM9DS1_SPI_CS_GPIO_PORT,LSM9DS1_SPI_CS_PIN));
+	uint8_t whoami = 0;
+	LSM9DS1_Read_G(&whoami, LSM9DS1_WHO_AM_I, 1);
+	printf("Who am i gyro %d\n", whoami);
+	whoami = 0;
+	LSM9DS1_Read_XL(&whoami, LSM9DS1_WHO_AM_I, 1);
+	printf("Who am i accel %d\n", whoami);
 }
 
 
