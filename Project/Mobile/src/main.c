@@ -208,7 +208,6 @@ void init_EXT10_interrupts(void){
 		
 }
 
-
 /*
  * main: initialize and start the system
  */
@@ -223,16 +222,16 @@ int main (void) {
 	EXTI_GenerateSWInterrupt(EXTI_Line0);	// start thread execution 
 	
 	
-//	memset(&test_data, 0, sizeof(test_data));
-//	
-//	cc2500_start_up_procedure();
+	memset(&test_data, 0, sizeof(test_data));
+	
+	cc2500_start_up_procedure();
 
-//	uint8_t test = 0;
-//	
-//	cc2500_Read_Status_Register(&test,CC2500_PARTNUM);
-//	
-//	printf("after reset and initialization\n");
-//	printf("partnum %d\n", test);
+	uint8_t test = 0;
+	
+	cc2500_Read_Status_Register(&test,CC2500_PARTNUM);
+	
+	printf("after reset and initialization\n");
+	printf("partnum %d\n", test);
 
 //	init_gpio(GPIO_Pin_0, RCC_AHB1Periph_GPIOA, GPIOA, 1, 0);
 //	

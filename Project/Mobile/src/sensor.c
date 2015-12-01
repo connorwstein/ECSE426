@@ -171,8 +171,8 @@ void init_sensor(void){
 	
 	//Enable interrupts
 	uint8_t interrupts = 0x02; //enable both accelerometer and gyro 
-	//LSM9DS1_Write(&interrupts,LSM9DS1_INT1_CTRL, 1);
-
+	LSM9DS1_Write(&interrupts,LSM9DS1_INT1_CTRL, 1);
+	printf("Enabled interrupts\n");
 	// Initialize buffers
 	init_xl_buffer(&Ax1_moving_average);
 	init_xl_buffer(&Ay1_moving_average);
