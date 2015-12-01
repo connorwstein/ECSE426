@@ -17,8 +17,8 @@
 //#include "moving_average.h"
 
 #define NUM_MG_PER_G 1000
-#define BUFFER_DEPTH_XL 10
-#define BUFFER_DEPTH_G 10
+#define BUFFER_DEPTH_XL 50
+#define BUFFER_DEPTH_G 50
 #define PI 3.14159265358
 
 #define ACC11 1 
