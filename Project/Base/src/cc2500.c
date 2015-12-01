@@ -1,3 +1,14 @@
+/**
+  ******************************************************************************
+  * @file    cc2500.c
+  * @author  Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca)
+  * @version V1.0.0
+  * @date    12-01-2015
+  * @brief   cc2500 wireless driver
+  ****************************************************************************** 
+*/
+
+
 #include "cc2500.h"
 #include "math.h"
 
@@ -10,7 +21,7 @@ __IO uint32_t  CC2500Timeout = CC2500_FLAG_TIMEOUT;
 /* Dummy Byte Send by the SPI Master device in order to generate the Clock to the Slave device */
 #define DUMMY_BYTE                 ((uint8_t)0x00)
 
-
+//variables used for receiving data
 uint8_t command_strobe_response,num_bytes_in_FIFO,num_bytes_to_read;
 
 void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
@@ -24,16 +35,27 @@ void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
 }
 
 
+
+/**
+  * @brief  Reads data from the RX FIFO, and writes it to the output_array. 
+  * @param  output_array : pointer to the buffer that receives the data read from the RX FIFO.
+  * @retval number of bytes that were read
+  */
 uint8_t cc2500_Receive_Data(uint8_t* output_array){
-	//	code for overflow handling
+	//code for overflow handling
 	cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SRX);
-	if(command_strobe_response>>4 == 6){
+	
+	//shift the strobe response to ignore the last 4 bits
+	if(command_strobe_response>>4 == RX_OVERFLOW){
 		printf("overflow\n");
 		cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SFRX);
 		num_bytes_to_read = 0;
-	}	
+	}
+	
+	//read the RX FIFO and write to output_array
 	else{	
 		cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SRX);
+		//find out how much data is in RX FIFO
 		cc2500_Read_Status_Register(&num_bytes_in_FIFO, CC2500_RXBYTES);
 		printf("RXBYTES %d\n", num_bytes_in_FIFO);
 		//num_bytes_to_read = fmin(SIZE_OF_FIFO,num_bytes_in_FIFO);
@@ -46,7 +68,7 @@ uint8_t cc2500_Receive_Data(uint8_t* output_array){
 
 
 /**
-  * @brief  Writes one byte to the cc2500.
+  * @brief  Writes a block of data to the cc2500.
   * @param  pBuffer : pointer to the buffer  containing the data to be written to the cc2500.
   * @param  WriteAddr : cc2500's internal address to write to.
   * @param  NumByteToWrite: Number of bytes to write.
@@ -116,6 +138,13 @@ void cc2500_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead)
 }
 
 
+
+/**
+  * @brief  Sends a command strobe
+	* @param  pBuffer: where the read data is written
+	* @param  ReadAddr: the read address.
+  * @retval None
+  */
 void cc2500_Send_Command_Strobe(uint8_t* pBuffer, uint8_t ReadAddr)
 { 
 	ReadAddr |= (uint8_t)(READWRITE_CMD);
@@ -123,6 +152,12 @@ void cc2500_Send_Command_Strobe(uint8_t* pBuffer, uint8_t ReadAddr)
 }
 
 
+/**
+  * @brief  Reads a status register (it sends a burst read command).
+	* @param  pBuffer: where the read data is written
+	* @param  ReadAddr: the read address.
+  * @retval None
+  */
 void cc2500_Read_Status_Register(uint8_t* pBuffer, uint8_t ReadAddr)
 { 
 	ReadAddr |= (uint8_t)(READWRITE_CMD | MULTIPLEBYTE_CMD);
@@ -130,7 +165,12 @@ void cc2500_Read_Status_Register(uint8_t* pBuffer, uint8_t ReadAddr)
 }
 
 
-
+/**
+  * @brief  Reads one byte from address. Used for sending command strobes and reading status registers.
+	* @param  pBuffer: where the read data is written
+	* @param  ReadAddr: the read address.
+  * @retval None
+  */
 void cc2500_One_Byte_Read(uint8_t* pBuffer, uint8_t ReadAddr)
 {
 	 /* Set chip select Low at the start of the transmission */
@@ -148,17 +188,29 @@ void cc2500_One_Byte_Read(uint8_t* pBuffer, uint8_t ReadAddr)
 }
 
 
-
+/**
+  * @brief  Resets the wireless chip, and initializes SPI and GPIO.
+  * @param  None
+  * @retval None
+  */
 void cc2500_start_up_procedure(){
 	command_strobe_response = 0;
 	num_bytes_in_FIFO = 0;
 	num_bytes_to_read = 0;
 	
+	//before sending a reset command strobe, the driver has to be initialized
 	cc2500_LowLevel_Init();
+	
+	//delay
 	for(int i=0;i<10000000;i++);
 	
+	//then reset the driver
 	cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SRES);
+	
+	//initialize again
 	cc2500_LowLevel_Init();
+	
+	//delay
 	for(int i=0;i<10000000;i++);
 }
 
@@ -176,12 +228,10 @@ void cc2500_LowLevel_Init(void)
   /* Enable the SPI periph */
   RCC_APB2PeriphClockCmd(CC2500_SPI_CLK, ENABLE);
 
-  /* Enable SCK, MOSI and MISO GPIO clocks */
-  RCC_AHB1PeriphClockCmd(CC2500_SPI_SCK_GPIO_CLK | CC2500_SPI_MISO_GPIO_CLK | CC2500_SPI_MOSI_GPIO_CLK, ENABLE);
+  /* Enable SCK, MOSI, MISO, CS, GDO0 GPIO clocks */
+  RCC_AHB1PeriphClockCmd(CC2500_SPI_SCK_GPIO_CLK | CC2500_SPI_MISO_GPIO_CLK | 
+											CC2500_SPI_MOSI_GPIO_CLK | CC2500_SPI_CS_GPIO_CLK | CC2500_SPI_GDO0_GPIO_CLK, ENABLE);
 
-  /* Enable CS  GPIO clock */
-  RCC_AHB1PeriphClockCmd(CC2500_SPI_CS_GPIO_CLK, ENABLE);
-  
   /* Enable GDO0 GPIO clock */
   RCC_AHB1PeriphClockCmd(CC2500_SPI_GDO0_GPIO_CLK, ENABLE);
   
@@ -219,7 +269,7 @@ void cc2500_LowLevel_Init(void)
   SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
   SPI_Init(CC2500_SPI, &SPI_InitStructure);
 
-  /* Enable SPI1  */
+  /* Enable SPI4  */
   SPI_Cmd(CC2500_SPI, ENABLE);
 
   /* Configure GPIO PIN for Lis Chip select */
@@ -245,9 +295,12 @@ void cc2500_LowLevel_Init(void)
 }
 
 /**
-	@brief Configures the CC2500 register values to required configuration
-*/
+	* @brief Configures the CC2500 register values to required configuration
+	* @param  None
+  * @retval None
+  */
 void cc2500_configure_registers(){
+		//delay before setting register values
 		for(int i=0;i<10000000;i++);
 		uint8_t configuration_values[36]={VAL_CC2500_IOCFG2,	VAL_CC2500_IOCFG0,	VAL_CC2500_FIFOTHR,	VAL_CC2500_PKTLEN,	VAL_CC2500_PKTCTRL1,
 						VAL_CC2500_PKTCTRL0, VAL_CC2500_ADDR, VAL_CC2500_CHANNR,	VAL_CC2500_FSCTRL1,	VAL_CC2500_FSCTRL0,	
@@ -270,6 +323,8 @@ void cc2500_configure_registers(){
 	}	
 				
 }
+
+
 /**
   * @brief  Sends a Byte through the SPI interface and return the Byte received 
   *         from the SPI bus.
@@ -300,7 +355,7 @@ uint8_t cc2500_SendByte(uint8_t byte)
   return (uint8_t)SPI_I2S_ReceiveData(CC2500_SPI);
 }
 
-//#ifdef USE_DEFAULT_TIMEOUT_CALLBACK
+
 /**
   * @brief  Basic management of the timeout situation.
   * @param  None.
@@ -313,4 +368,3 @@ uint32_t cc2500_TIMEOUT_UserCallback(void)
   {   
   }
 }
-//#endif /* USE_DEFAULT_TIMEOUT_CALLBACK */
