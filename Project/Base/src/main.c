@@ -5,194 +5,139 @@
 #define osObjectsPublic                     // define objects in main module
 #include "osObjects.h"                      // RTOS object definitions
 #include "stm32f4xx.h"                  // Device header
-
 #include "stm32f4xx_conf.h"
 #include "stm32f429i_discovery.h"
 #include "stm32f429i_discovery_lcd.h"
 #include "stm32f429i_discovery_l3gd20.h"
 #include "background16bpp.h"
-
 #include <stdio.h>
 #include <string.h>
+#include "cc2500.h"
+#include "math.h"
+#include "Timers_and_interrupts.h"
+
+#define MAX_PATH_LENGTH 100
+#define SIZE_OF_TEST_DATA 100
+#define X_ZERO_OFFSET 50
+#define Y_ZERO_OFFSET 50
+#define IMAGE_REVERSE_OFFSET 240
+#define CROSS_SIZE 5
+uint8_t fifo_contents[SIZE_OF_TEST_DATA];
+uint16_t path_data[MAX_PATH_LENGTH];
+uint16_t length_of_path;
+
+void receiving(void const *argument);
+void draw_path(void const *argument);
+
+osThreadDef(receiving, osPriorityNormal, 1, 400);
+osThreadId receiving_thread;
+
+osThreadDef(draw_path, osPriorityNormal, 1, 400);
+osThreadId draw_path_thread;
+
+osMutexId path_data_mutex;
+osMutexDef(path_data_mutex);
 
 
-static void delay(__IO uint32_t nCount)
-{
-  __IO uint32_t index = 0; 
-  for(index = 100000*nCount; index != 0; index--)
-  {
-  }
+void eight_to_sixteen(uint16_t* output_array, uint8_t* input_array,uint16_t size_of_array){
+	
+	for(int i=0;i<size_of_array/2;i++){
+		output_array[i] = (input_array[i*2] << 8) + input_array[(i*2)+1];
+	}
+	
 }
 
+void receiving(void const *argument){
+	uint8_t num_bytes_to_read = 0;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/**
-  * @brief    Illustartes a simple shape draw and fill, and string dsiplay
-  * @function This function draws concentrated colour-filled circles. It also draw a square and a triangle. Some text at two
-              different font sizes is displayed.
-  * @param    None
-  * @retval   None
-  */
-
-void example_1a(void const *argument){
 	while(1){
-		/* Clear the LCD */ 
-    LCD_Clear(LCD_COLOR_WHITE);
-	
-	  //The files source and header files implement drawing characters (drawing strings)
-	  //using different font sizes, see the file font.h for the four sizes
-    LCD_SetFont(&Font8x8);
-	  //The number of string lines avaialble is dependant on the font height:
-	  //A font height of 8 will result in 320 / 8 = 40 lines
-    LCD_DisplayStringLine(LINE(1), (uint8_t*)"      Welcome to uP lab     ");
-    LCD_DisplayStringLine(LINE(2), (uint8_t*)"          Good Luck         ");
-	  
-	  //The stm32f429i_discovery_lcd.h file offers functions which allows to draw various shapes
-	  //in either border or filled with colour. You can draw circles, rectangles, triangles, lines,
-	  //ellipses, and polygons. You can draw strings or characters, change background/foreground 
-	  //colours.
-	
-	  LCD_DrawLine(0, 32, 240, LCD_DIR_HORIZONTAL);
-	  LCD_DrawLine(0, 34, 240, LCD_DIR_HORIZONTAL);
-	  LCD_SetTextColor(LCD_COLOR_BLUE2); 
-	  LCD_DrawFullCircle(120, 160, 100);
-	  LCD_SetTextColor(LCD_COLOR_CYAN); 
-	  LCD_DrawFullCircle(120, 160, 90);
-	  LCD_SetTextColor(LCD_COLOR_YELLOW); 
-	  LCD_DrawFullCircle(120, 160, 80);
-	  LCD_SetTextColor(LCD_COLOR_RED); 
-	  LCD_DrawFullCircle(120, 160, 70);
-	  LCD_SetTextColor(LCD_COLOR_BLUE); 
-	  LCD_DrawFullCircle(120, 160, 60);
-	  LCD_SetTextColor(LCD_COLOR_GREEN); 
-	  LCD_DrawFullCircle(120, 160, 50);
-	  LCD_SetTextColor(LCD_COLOR_BLACK); 
-	  LCD_DrawFullCircle(120, 160, 40);
-		LCD_SetTextColor(LCD_COLOR_WHITE);
-		LCD_DrawRect(90,130,60,60);
-		LCD_SetTextColor(LCD_COLOR_MAGENTA);
-		LCD_FillTriangle(90, 120, 150, 130, 180, 130);
-		LCD_SetFont(&Font12x12);
-		LCD_DisplayStringLine(LINE(15), (uint8_t*)"      Success!    ");
+		osSignalWait(0x01,osWaitForever);
 		
-		osDelay(250);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/**
-  * @brief    Displays a bitmap image
-  * @function This function copies a bitmap image converted by STM32 Imager into an array "background16bpp.h" and stored
-in flash memory into the active buffer in SDRAM. The SDRAM has two layer buffer:
-              ->Background layer at address LCD_FRAME_BUFFER = 0xD0000000
-              ->Foreground layer at address LCD_FRAME_BUFFER + BUFFER_OFFSET = 0xD0000000 + 0x00050000
-              memcpy is a processor intiated and managed transfer. A more efficient way is to use DMA2D ChromeART acccelerator
-              Once the image is copied into the active buffer (which we set by LCD_SetLayer(LCD_FOREGROUND_LAYER) command ), the
-              LTDC updates the display when it continously refreshes the output display
-  * @param    None
-  * @retval   None
-  */
-
-void example_1b(void const *argument){
-	while(1){
-		memcpy ( (void *)(LCD_FRAME_BUFFER + BUFFER_OFFSET), (void *) &background, sizeof(background));
-		printf("hellow world\n");
-		osDelay(250);
+		osDelay(1000);
+		//printf("/IN RECEIVING ");
+		num_bytes_to_read = cc2500_Receive_Data(fifo_contents);
+		
+		printf("num_bytes_to_read %d\n",num_bytes_to_read);
+		
+		osMutexWait(path_data_mutex,osWaitForever);
+		eight_to_sixteen(path_data+length_of_path,fifo_contents,num_bytes_to_read);
+		osMutexRelease(path_data_mutex);
+		
+		for(int i=0;i<num_bytes_to_read;i++){
+			printf("fifo_contents[%d] is %d\n", i,fifo_contents[i]);
+		}
+		
+		length_of_path += (num_bytes_to_read / 2);
+		
+		osSignalSet(draw_path_thread,0x01);
 	}
 }
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/**
-  * @brief    Illustartes a simple animation program
-  * @function This function draws concentrated circles emanating from the center towards the LCD edge in
-              an animated fashion. It will look as a sonar or radar display. Then it simulates locking 
-              onto a target by flashing a small red circle and displaying the text "Object located"
-  * @param    None
-  * @retval   None
-  */
+void image_reverse_and_zero_offset(uint16_t* input_data, uint16_t size_of_array){
+	for(int i=0;i<size_of_array;i++){
+		if(i%2 == 0){
+			input_data[i] += X_ZERO_OFFSET;
+			input_data[i] = IMAGE_REVERSE_OFFSET - input_data[i];
+		}
+		else{
+			input_data[i] += Y_ZERO_OFFSET;
+		}
+	}
+}
 
-void example_1c(void const *argument){
-	while(1){
-			/* Clear the LCD */ 
+
+void draw_cross(uint16_t x_point,uint16_t y_point){
+	LCD_DrawUniLine(x_point-CROSS_SIZE,y_point-CROSS_SIZE,x_point+CROSS_SIZE,y_point+CROSS_SIZE);
+	LCD_DrawUniLine(x_point-CROSS_SIZE,y_point+CROSS_SIZE,x_point+CROSS_SIZE,y_point-CROSS_SIZE);
+}
+
+void draw_path(void const *argument){	
+	
+	uint16_t final_path_data[MAX_PATH_LENGTH];
+	memset(&final_path_data, 0, sizeof(final_path_data));
+
+	uint16_t test_data[10]={0,0,25,100,50,200,75,180,100,150};
+	image_reverse_and_zero_offset(test_data,10);
+	
+	
+	//while(1){
+	//osSignalWait(0x01,osWaitForever);
+		//osMutexWait(path_data_mutex,osWaitForever);
+		memcpy(final_path_data,path_data,length_of_path);
+		//osMutexRelease(path_data_mutex);
+	
 		LCD_Clear(LCD_COLOR_WHITE);
-		LCD_SetFont(&Font8x8);
-		LCD_DisplayStringLine(LINE(1), (uint8_t*)"  Radar Scanning for Object  ");
-		
 		LCD_SetTextColor(LCD_COLOR_BLUE2);
-		LCD_DrawLine(10, 160, 220, LCD_DIR_HORIZONTAL);
-		LCD_DrawLine(120, 50, 220, LCD_DIR_VERTICAL );
-		
-		LCD_SetTextColor(LCD_COLOR_BLUE2);
-		LCD_DrawCircle(120, 160, 10);	
-		delay(35);
-		LCD_DrawCircle(120, 160, 20);	
-		delay(35);
-		LCD_DrawCircle(120, 160, 30);	
-		delay(35);
-		LCD_DrawCircle(120, 160, 40);	
-		delay(35);
-		LCD_DrawCircle(120, 160, 50);	
-		delay(35);
-		LCD_DrawCircle(120, 160, 60);	
-		delay(35);
-		LCD_DrawCircle(120, 160, 70);	
-		delay(35);
-		LCD_DrawCircle(120, 160, 80);	
-		delay(35);
-		LCD_DrawCircle(120, 160, 90);	
-		delay(35);
-		LCD_DrawCircle(120, 160, 100);	
-		delay(35);
-		LCD_SetTextColor(LCD_COLOR_RED);
-		LCD_DisplayStringLine(LINE(36), (uint8_t*)"        Object Located    ");
-		LCD_DrawFullRect(90,130,10,10);
-		delay(25);
-		LCD_SetTextColor(LCD_COLOR_WHITE);
-		LCD_DrawFullRect(90,130,10,10);
-		delay(25);
-		LCD_SetTextColor(LCD_COLOR_RED);
-		LCD_DrawFullRect(90,130,10,10);
-		delay(25);
-		LCD_SetTextColor(LCD_COLOR_WHITE);
-		LCD_DrawFullRect(90,130,10,10);
-		delay(25);
-		LCD_SetTextColor(LCD_COLOR_RED);
-		LCD_DrawFullRect(90,130,10,10);
-		delay(25);
-		LCD_SetTextColor(LCD_COLOR_WHITE);
-		LCD_DrawFullRect(90,130,10,10);
-		delay(25);
-		LCD_SetTextColor(LCD_COLOR_RED);
-		LCD_DrawFullRect(90,130,10,10);
-		delay(25);
-		LCD_SetTextColor(LCD_COLOR_WHITE);
-		LCD_DrawFullRect(90,130,10,10);
-		delay(25);
-		LCD_SetTextColor(LCD_COLOR_RED);
-		LCD_DrawFullRect(90,130,10,10);
-		delay(25);
-		
-		osDelay(250);
-	}
+		for (int i=0;i<8;i+=2){
+			LCD_DrawUniLine(test_data[i],test_data[i+1],test_data[i+2],test_data[i+3]);
+		}
+		draw_cross(test_data[0],test_data[1]);
+
+		//osDelay(10);
+			
+	//}
 }
 
-osThreadDef(example_1a, osPriorityNormal, 1, 0);
-osThreadDef(example_1b, osPriorityNormal, 1, 0);
-osThreadDef(example_1c, osPriorityNormal, 1, 0);
 
-// ID for theads
-osThreadId example_1a_thread;
-osThreadId example_1b_thread;
-osThreadId example_1c_thread;
 
+void EXTI4_IRQHandler(void){
+	if(EXTI_GetITStatus(EXTI_Line4)!=RESET){
+			EXTI_ClearITPendingBit(EXTI_Line4); // Clear the interrupt pending bit
+			printf("inside interrupt handler\n");
+			osSignalSet(receiving_thread,0x01);
+	}
+}
 /*
  * main: initialize and start the system
  */
 int main (void) {
   osKernelInitialize ();                    // initialize CMSIS-RTOS
 	
-  // initialize peripherals here
+	memset(&fifo_contents, 0, sizeof(fifo_contents));
+	memset(&fifo_contents, 0, sizeof(path_data));
+	length_of_path = 0;
+	
 	/* LCD initiatization */
   LCD_Init();
   
@@ -205,23 +150,41 @@ int main (void) {
   /* Set LCD foreground layer as the current layer */
   LCD_SetLayer(LCD_FOREGROUND_LAYER);
 	
+	/* wireless chipset initialization */
+	cc2500_start_up_procedure();
 	
+	uint8_t test = 0;
+	cc2500_Read_Status_Register(&test,CC2500_PARTNUM);
 	
-  // create 'thread' functions that start executing,
-  // example: tid_name = osThreadCreate (osThread(name), NULL);
+	printf("after reset and initializaion\n");
+	printf("partnum %d\n",test);
+
+	receiving_thread = osThreadCreate(osThread(receiving), NULL);
+	draw_path_thread = osThreadCreate(osThread(draw_path), NULL);
 	
-	/*******************************************************
-	         Uncomment the example you want to see
-	example_1a: Simple shape draw, fill and text display
-	example_1b: bitmap image display
-	example_1c: Simple animation
-	********************************************************/
-	
-	//example_1a_thread = osThreadCreate(osThread(example_1a), NULL);
-	example_1b_thread = osThreadCreate(osThread(example_1b), NULL);
-	//example_1c_thread = osThreadCreate(osThread(example_1c), NULL);
-	
+	/* EXTI interrupts for CC250 Initialize*/
+	init_EXTI_interrupt();
+
+	EXTI_GenerateSWInterrupt(EXTI_Line4);
+
 	osKernelStart ();                         // start thread execution 
+	
 }
+
+
+
+
+
+
+
+	
+	
+
+
+
+
+
+
+
 
 
