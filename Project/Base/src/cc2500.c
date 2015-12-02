@@ -22,7 +22,7 @@ __IO uint32_t  CC2500Timeout = CC2500_FLAG_TIMEOUT;
 #define DUMMY_BYTE                 ((uint8_t)0x00)
 
 //variables used for receiving data
-uint8_t command_strobe_response,num_bytes_in_FIFO,num_bytes_to_read;
+uint8_t command_strobe_response,num_bytes_in_FIFO;
 
 void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
 	cc2500_Write(&num_bytes, CC2500_FIFO, 1);
@@ -49,7 +49,7 @@ uint8_t cc2500_Receive_Data(uint8_t* output_array){
 	if(command_strobe_response>>4 == RX_OVERFLOW){
 		printf("overflow\n");
 		cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SFRX);
-		num_bytes_to_read = 0;
+		num_bytes_in_FIFO = 0;
 	}
 	
 	//read the RX FIFO and write to output_array
@@ -58,11 +58,9 @@ uint8_t cc2500_Receive_Data(uint8_t* output_array){
 		//find out how much data is in RX FIFO
 		cc2500_Read_Status_Register(&num_bytes_in_FIFO, CC2500_RXBYTES);
 		printf("RXBYTES %d\n", num_bytes_in_FIFO);
-		//num_bytes_to_read = fmin(SIZE_OF_FIFO,num_bytes_in_FIFO);
-		num_bytes_to_read = num_bytes_in_FIFO;
-		cc2500_Read(output_array, CC2500_FIFO,num_bytes_to_read);
+		cc2500_Read(output_array, CC2500_FIFO,num_bytes_in_FIFO);
 	}
-	return num_bytes_to_read;
+	return num_bytes_in_FIFO;
 }
 
 
@@ -196,7 +194,6 @@ void cc2500_One_Byte_Read(uint8_t* pBuffer, uint8_t ReadAddr)
 void cc2500_start_up_procedure(){
 	command_strobe_response = 0;
 	num_bytes_in_FIFO = 0;
-	num_bytes_to_read = 0;
 	
 	//before sending a reset command strobe, the driver has to be initialized
 	cc2500_LowLevel_Init();

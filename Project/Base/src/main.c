@@ -18,8 +18,12 @@
 
 #define MAX_PATH_LENGTH 100
 #define SIZE_OF_TEST_DATA 100
-#define X_ZERO_OFFSET 50
-#define Y_ZERO_OFFSET 50
+
+#define X_ZERO_OFFSET 10
+#define Y_ZERO_OFFSET 10
+#define USABLE_X_SIZE 240 - X_ZERO_OFFSET*2
+#define USABLE_Y_SIZE 320 - Y_ZERO_OFFSET*2
+#define SCALE_CONSTANT 5
 #define IMAGE_REVERSE_OFFSET 240
 #define CROSS_SIZE 5
 uint8_t fifo_contents[SIZE_OF_TEST_DATA];
@@ -32,7 +36,7 @@ void draw_path(void const *argument);
 osThreadDef(receiving, osPriorityNormal, 1, 400);
 osThreadId receiving_thread;
 
-osThreadDef(draw_path, osPriorityNormal, 1, 400);
+osThreadDef(draw_path, osPriorityNormal, 1, 2000);
 osThreadId draw_path_thread;
 
 osMutexId path_data_mutex;
@@ -41,36 +45,55 @@ osMutexDef(path_data_mutex);
 
 void eight_to_sixteen(uint16_t* output_array, uint8_t* input_array,uint16_t size_of_array){
 	
-	for(int i=0;i<size_of_array/2;i++){
-		output_array[i] = (input_array[i*2] << 8) + input_array[(i*2)+1];
+	for(int i=0;i<size_of_array;i++){
+		output_array[i] = (uint16_t)input_array[i];
 	}
 	
 }
 
 void receiving(void const *argument){
 	uint8_t num_bytes_to_read = 0;
+	path_data_mutex = osMutexCreate(osMutex(path_data_mutex));
 
 	while(1){
 		osSignalWait(0x01,osWaitForever);
 		
-		osDelay(1000);
-		//printf("/IN RECEIVING ");
+		osDelay(100);
 		num_bytes_to_read = cc2500_Receive_Data(fifo_contents);
 		
 		printf("num_bytes_to_read %d\n",num_bytes_to_read);
 		
-		osMutexWait(path_data_mutex,osWaitForever);
-		eight_to_sixteen(path_data+length_of_path,fifo_contents,num_bytes_to_read);
-		osMutexRelease(path_data_mutex);
 		
-		for(int i=0;i<num_bytes_to_read;i++){
-			printf("fifo_contents[%d] is %d\n", i,fifo_contents[i]);
+		if(num_bytes_to_read>0){
+			osMutexWait(path_data_mutex,osWaitForever);
+			eight_to_sixteen(path_data,fifo_contents+1,num_bytes_to_read-1);
+			osMutexRelease(path_data_mutex);
+			
+			for(int i=0;i<num_bytes_to_read-1;i++){
+				printf("fifo_contents[%d] is %d\n", i,fifo_contents[i]);
+			}
+			for(int i=0;i<num_bytes_to_read-1;i++){
+				printf("path_data[%d] is %d\n", i,path_data[i]);
+			}
+			
+			length_of_path += num_bytes_to_read-1;
+
+			osSignalSet(draw_path_thread,0x01);
 		}
-		
-		length_of_path += (num_bytes_to_read / 2);
-		
-		osSignalSet(draw_path_thread,0x01);
 	}
+}
+
+
+uint16_t maximum_of_array(uint16_t* input_data, uint16_t size_of_array){
+	uint16_t maximum_value = 0;
+	
+	for(int i=0;i<size_of_array;i++){
+		if (input_data[i] > maximum_value){
+			maximum_value = input_data[i];
+		}
+	}
+	
+	return maximum_value;
 }
 
 
@@ -86,6 +109,13 @@ void image_reverse_and_zero_offset(uint16_t* input_data, uint16_t size_of_array)
 	}
 }
 
+void scale_data_to_screen(uint16_t* input_data, uint16_t size_of_array){
+	
+	for(int i=0;i<size_of_array;i++){
+		input_data[i] *= SCALE_CONSTANT;
+	}
+}
+
 
 void draw_cross(uint16_t x_point,uint16_t y_point){
 	LCD_DrawUniLine(x_point-CROSS_SIZE,y_point-CROSS_SIZE,x_point+CROSS_SIZE,y_point+CROSS_SIZE);
@@ -97,26 +127,40 @@ void draw_path(void const *argument){
 	uint16_t final_path_data[MAX_PATH_LENGTH];
 	memset(&final_path_data, 0, sizeof(final_path_data));
 
-	uint16_t test_data[10]={0,0,25,100,50,200,75,180,100,150};
-	image_reverse_and_zero_offset(test_data,10);
+	uint16_t test_data[10]={0,0,1,1,10,2,15,20,10,50};
 	
 	
-	//while(1){
-	//osSignalWait(0x01,osWaitForever);
-		//osMutexWait(path_data_mutex,osWaitForever);
-		memcpy(final_path_data,path_data,length_of_path);
-		//osMutexRelease(path_data_mutex);
-	
+	while(1){
+		osSignalWait(0x01,osWaitForever);
+		osMutexWait(path_data_mutex,osWaitForever);
+		memcpy(final_path_data,path_data,sizeof(path_data));
+		osMutexRelease(path_data_mutex);
+		
 		LCD_Clear(LCD_COLOR_WHITE);
 		LCD_SetTextColor(LCD_COLOR_BLUE2);
-		for (int i=0;i<8;i+=2){
-			LCD_DrawUniLine(test_data[i],test_data[i+1],test_data[i+2],test_data[i+3]);
+		
+		scale_data_to_screen(final_path_data,length_of_path);
+		image_reverse_and_zero_offset(final_path_data,length_of_path);
+		
+		for(int i=0;i<length_of_path;i++){
+			printf("final_path_data[%d] is %d\n", i,final_path_data[i]);
 		}
-		draw_cross(test_data[0],test_data[1]);
+		
+		for (int i=0;i<=length_of_path-4;i+=2){
+			LCD_DrawUniLine(final_path_data[i],final_path_data[i+1],final_path_data[i+2],final_path_data[i+3]);
+		}
+		draw_cross(final_path_data[0],final_path_data[1]);
+		
+		
+//		scale_data_to_screen(test_data,10);
+//		image_reverse_and_zero_offset(test_data,10);
+//		
+//		for (int i=0;i<=6;i+=2){
+//			LCD_DrawUniLine(test_data[i],test_data[i+1],test_data[i+2],test_data[i+3]);
+//		}
+//		draw_cross(test_data[0],test_data[1]);
 
-		//osDelay(10);
-			
-	//}
+	}
 }
 
 
@@ -149,6 +193,8 @@ int main (void) {
   
   /* Set LCD foreground layer as the current layer */
   LCD_SetLayer(LCD_FOREGROUND_LAYER);
+	
+	LCD_Clear(LCD_COLOR_WHITE);
 	
 	/* wireless chipset initialization */
 	cc2500_start_up_procedure();

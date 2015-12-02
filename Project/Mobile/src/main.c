@@ -16,8 +16,6 @@
 #include "Timers_and_interrupts.h"
 
 #define MAX_PATH_LENGTH 20 //20 means 10 (X, Y) points
-#define SIZE_OF_TEST_DATA 100
-#define MAX_INT16 32767
 
 #define STEP_THRESHOLD -75000
 #define RIEMANN_SUM_THRESHOLD 50
@@ -85,11 +83,13 @@ void button_detector(void const *argument){
 		osSignalWait(1,osWaitForever);
 		
 		delay_counter++;
-		printf("%d\n",delay_counter);
+
 		if(delay_counter>10){
 		
 			current_key = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0);
-
+			
+			printf("current_key %d\n",current_key);
+			
 			if(current_key == 1 && previous_key == 0){
 				// Key change detected (key press)
 				button_has_been_pressed += 1;
@@ -106,10 +106,10 @@ void button_detector(void const *argument){
 					enable_sensor_interrupt = 1;
 					EXTI_GenerateSWInterrupt(EXTI_Line0);	// start thread execution 
 				}
-				
-				previous_key = current_key;
 			}
 		}
+		
+	previous_key = current_key;
 	}
 }
 
@@ -146,6 +146,13 @@ void transmission(void const *argument){
 	while(1){
 		osSignalWait(1,osWaitForever);
 		scale_path();	
+		//cc2500_Transmit_Data((uint8_t*)path_data,MAX_PATH_LENGTH);
+		
+		for(int i=2; i<MAX_PATH_LENGTH;i++){
+			path_data[i] = i;
+			printf("%d\n",i);
+		}
+		
 		cc2500_Transmit_Data((uint8_t*)path_data,MAX_PATH_LENGTH);
 	}
 }

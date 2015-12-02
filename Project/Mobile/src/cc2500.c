@@ -16,12 +16,14 @@ uint8_t command_strobe_response,num_bytes_in_FIFO,num_bytes_to_read;
 uint8_t data_already_sent, amount_of_data_to_send;
 
 void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
+	printf("in transmit data\n");
 	data_already_sent = 0;
 	while(data_already_sent < num_bytes){
 		cc2500_Read_Status_Register(&command_strobe_response,CC2500_TXBYTES);
 		if(command_strobe_response == 0){
-			
-			osDelay(1000);
+			printf("command strobe response is 0\n");
+			//osDelay(100);
+			printf("after delay\n");
 			if(data_already_sent + SIZE_OF_FIFO <= num_bytes){
 				amount_of_data_to_send = SIZE_OF_FIFO;
 			}
