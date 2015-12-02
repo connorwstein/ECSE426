@@ -16,17 +16,16 @@
 #include "math.h"
 #include "Timers_and_interrupts.h"
 
-#define MAX_PATH_LENGTH 100
-#define SIZE_OF_TEST_DATA 100
+#define MAX_PATH_LENGTH 200
 
 #define X_ZERO_OFFSET 10
 #define Y_ZERO_OFFSET 10
 #define USABLE_X_SIZE 240 - X_ZERO_OFFSET*2
 #define USABLE_Y_SIZE 320 - Y_ZERO_OFFSET*2
-#define SCALE_CONSTANT 5
+#define SCALE_CONSTANT 1
 #define IMAGE_REVERSE_OFFSET 240
 #define CROSS_SIZE 5
-uint8_t fifo_contents[SIZE_OF_TEST_DATA];
+uint8_t fifo_contents[SIZE_OF_FIFO];
 uint16_t path_data[MAX_PATH_LENGTH];
 uint16_t length_of_path;
 
@@ -58,7 +57,7 @@ void receiving(void const *argument){
 	while(1){
 		osSignalWait(0x01,osWaitForever);
 		
-		osDelay(100);
+		osDelay(500);
 		num_bytes_to_read = cc2500_Receive_Data(fifo_contents);
 		
 		printf("num_bytes_to_read %d\n",num_bytes_to_read);
@@ -66,15 +65,15 @@ void receiving(void const *argument){
 		
 		if(num_bytes_to_read>0){
 			osMutexWait(path_data_mutex,osWaitForever);
-			eight_to_sixteen(path_data,fifo_contents+1,num_bytes_to_read-1);
+			eight_to_sixteen(path_data+length_of_path,fifo_contents+1,num_bytes_to_read-1);
 			osMutexRelease(path_data_mutex);
 			
 			for(int i=0;i<num_bytes_to_read-1;i++){
 				printf("fifo_contents[%d] is %d\n", i,fifo_contents[i]);
 			}
-			for(int i=0;i<num_bytes_to_read-1;i++){
-				printf("path_data[%d] is %d\n", i,path_data[i]);
-			}
+//			for(int i=0;i<num_bytes_to_read-1;i++){
+//				printf("path_data[%d] is %d\n", i,path_data[i]);
+//			}
 			
 			length_of_path += num_bytes_to_read-1;
 
@@ -142,9 +141,9 @@ void draw_path(void const *argument){
 		scale_data_to_screen(final_path_data,length_of_path);
 		image_reverse_and_zero_offset(final_path_data,length_of_path);
 		
-		for(int i=0;i<length_of_path;i++){
-			printf("final_path_data[%d] is %d\n", i,final_path_data[i]);
-		}
+//		for(int i=0;i<length_of_path;i++){
+//			printf("final_path_data[%d] is %d\n", i,final_path_data[i]);
+//		}
 		
 		for (int i=0;i<=length_of_path-4;i+=2){
 			LCD_DrawUniLine(final_path_data[i],final_path_data[i+1],final_path_data[i+2],final_path_data[i+3]);

@@ -15,7 +15,7 @@
 #include "cc2500.h"
 #include "Timers_and_interrupts.h"
 
-#define MAX_PATH_LENGTH 20 //20 means 10 (X, Y) points
+#define MAX_PATH_LENGTH 200 //20 means 10 (X, Y) points
 
 #define STEP_THRESHOLD -75000
 #define RIEMANN_SUM_THRESHOLD 50
@@ -151,7 +151,7 @@ void transmission(void const *argument){
 		scale_path();	
 		//cc2500_Transmit_Data((uint8_t*)path_data,MAX_PATH_LENGTH);
 		
-		for(int i=2; i<MAX_PATH_LENGTH;i++){
+		for(int i=0; i<MAX_PATH_LENGTH;i++){
 			path_data[i] = i;
 			printf("%d\n",i);
 		}

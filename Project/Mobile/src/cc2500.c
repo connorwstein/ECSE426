@@ -19,11 +19,12 @@ void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
 	printf("in transmit data\n");
 	data_already_sent = 0;
 	while(data_already_sent < num_bytes){
+		
+		osDelay(1000);
 		cc2500_Read_Status_Register(&command_strobe_response,CC2500_TXBYTES);
+		
 		if(command_strobe_response == 0){
-			printf("command strobe response is 0\n");
-			osDelay(1000);
-			printf("after delay\n");
+
 			if(data_already_sent + SIZE_OF_FIFO <= num_bytes){
 				amount_of_data_to_send = SIZE_OF_FIFO;
 			}
@@ -41,17 +42,12 @@ void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
 			
 			cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_STX);
 			
-			if(command_strobe_response>>4 == 7){
-				cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SFTX);
-			}
-			
-			printf("SFTX = %x\n",command_strobe_response);
-			
-			cc2500_Read_Status_Register(&command_strobe_response,CC2500_TXBYTES);
-
-			printf("TXBYTES = %d\n",command_strobe_response);
-			
 			data_already_sent += amount_of_data_to_send;
+		}
+		
+		cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SNOP);
+		if(command_strobe_response>>4 == 7){
+			cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SFTX);
 		}
 	}
 }
@@ -180,11 +176,11 @@ void cc2500_start_up_procedure(){
 	num_bytes_to_read = 0;
 	
 	cc2500_LowLevel_Init();
-	for(int i=0;i<10000000;i++);
+	osDelay(100);
 	
 	cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SRES);
 	cc2500_LowLevel_Init();
-	for(int i=0;i<10000000;i++);
+	osDelay(100);
 }
 
 
