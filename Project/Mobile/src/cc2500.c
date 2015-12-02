@@ -44,6 +44,9 @@ void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
 			
 			data_already_sent += amount_of_data_to_send;
 		}
+		else{
+			printf("Strobe fail\n");
+		}
 		
 		cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SNOP);
 		if(command_strobe_response>>4 == 7){

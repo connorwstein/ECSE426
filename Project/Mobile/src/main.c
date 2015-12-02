@@ -15,7 +15,7 @@
 #include "cc2500.h"
 #include "Timers_and_interrupts.h"
 
-#define MAX_PATH_LENGTH 200 //20 means 10 (X, Y) points
+#define MAX_PATH_LENGTH 500 //20 means 10 (X, Y) points
 
 #define STEP_THRESHOLD -75000
 #define RIEMANN_SUM_THRESHOLD 50
@@ -106,6 +106,12 @@ void button_detector(void const *argument){
 				}
 				else if(button_has_been_pressed > 0){
 					printf("start path recording");
+					memset(path_data, 0, sizeof(path_data)); 
+					path_index = 2;
+					yaw = 0;
+					state = 0;
+					yaw_count = 0;
+					memset(yaw_buffer, 0, sizeof(yaw_buffer));
 					enable_sensor_interrupt = 1;
 					EXTI_GenerateSWInterrupt(EXTI_Line0);	// start thread execution 
 				}
@@ -149,20 +155,20 @@ void transmission(void const *argument){
 	while(1){
 		osSignalWait(1,osWaitForever);
 		scale_path();	
-		//cc2500_Transmit_Data((uint8_t*)path_data,MAX_PATH_LENGTH);
+//		//cc2500_Transmit_Data((uint8_t*)path_data,MAX_PATH_LENGTH);
+//		
+//		for(int i=0; i<MAX_PATH_LENGTH;i++){
+//			path_data[i] = i;
+//			printf("%d\n",i);
+//		}
 		
-		for(int i=0; i<MAX_PATH_LENGTH;i++){
-			path_data[i] = i;
-			printf("%d\n",i);
-		}
-		
-		cc2500_Transmit_Data((uint8_t*)path_data,MAX_PATH_LENGTH);
+		cc2500_Transmit_Data((uint8_t*)path_data,path_index);
 	}
 }
 
 
 void update_path(uint8_t new_state){
-	printf("updating path %d index %d\n", new_state, path_index);	
+	printf("STATE %d PATH_INDEX %d YAW %f\n", new_state, path_index, yaw/1000);	
 	switch(new_state){
 		case 0:
 			yaw = 0;  // Correct the heading --> remove gyro drift
