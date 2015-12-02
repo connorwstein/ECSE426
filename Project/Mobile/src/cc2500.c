@@ -22,7 +22,7 @@ void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
 		cc2500_Read_Status_Register(&command_strobe_response,CC2500_TXBYTES);
 		if(command_strobe_response == 0){
 			printf("command strobe response is 0\n");
-			//osDelay(100);
+			osDelay(1000);
 			printf("after delay\n");
 			if(data_already_sent + SIZE_OF_FIFO <= num_bytes){
 				amount_of_data_to_send = SIZE_OF_FIFO;

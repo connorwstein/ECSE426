@@ -51,11 +51,14 @@ osThreadDef(sensor_reader, osPriorityNormal, 1, 1000);
 	@brief Handler for when data is available from the accelerometer
 */
 void EXTI0_IRQHandler(void){
-	if(EXTI_GetITStatus(EXTI_Line0) != RESET && enable_sensor_interrupt){
+	if(EXTI_GetITStatus(EXTI_Line0) != RESET){
 			EXTI_ClearITPendingBit(EXTI_Line0); // Clear the interrupt pending bit
-			LSM9DS1_Read_XL(accelerometer_out); 
-			LSM9DS1_Read_G(gyro_out);	
-			osSignalSet(sensor_reader_thread,1);
+		
+			if(enable_sensor_interrupt){
+				LSM9DS1_Read_XL(accelerometer_out); 
+				LSM9DS1_Read_G(gyro_out);	
+				osSignalSet(sensor_reader_thread,1);
+			}
 	}
 }
 
@@ -84,11 +87,11 @@ void button_detector(void const *argument){
 		
 		delay_counter++;
 
-		if(delay_counter>10){
+		if(delay_counter>50){
 		
 			current_key = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0);
 			
-			printf("current_key %d\n",current_key);
+			//printf("current_key %d\n",current_key);
 			
 			if(current_key == 1 && previous_key == 0){
 				// Key change detected (key press)
