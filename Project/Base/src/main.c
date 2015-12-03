@@ -17,12 +17,13 @@
 #include "Timers_and_interrupts.h"
 
 #define MAX_PATH_LENGTH 200
+#define MAX_UINT16 65535
 
 #define X_ZERO_OFFSET 10
 #define Y_ZERO_OFFSET 10
-#define USABLE_X_SIZE 240 - X_ZERO_OFFSET*2
-#define USABLE_Y_SIZE 320 - Y_ZERO_OFFSET*2
-#define SCALE_CONSTANT 1
+#define USABLE_X_SIZE 220//240 - (X_ZERO_OFFSET*2)
+#define USABLE_Y_SIZE 300//320 - (Y_ZERO_OFFSET*2)
+#define SCALE_CONSTANT 5
 #define IMAGE_REVERSE_OFFSET 240
 #define CROSS_SIZE 5
 uint8_t fifo_contents[SIZE_OF_FIFO];
@@ -83,16 +84,25 @@ void receiving(void const *argument){
 }
 
 
-uint16_t maximum_of_array(uint16_t* input_data, uint16_t size_of_array){
-	uint16_t maximum_value = 0;
+uint16_t maximum_of_array(uint16_t* maximum_value_array, uint16_t* input_data, uint16_t size_of_array){
+	uint16_t x_max = 0;
+	uint16_t y_max = 0;
 	
 	for(int i=0;i<size_of_array;i++){
-		if (input_data[i] > maximum_value){
-			maximum_value = input_data[i];
+		if(i%2 == 0){
+			if (input_data[i] > x_max){
+				x_max = input_data[i];
+			}
+		}
+		else{
+			if (input_data[i] > y_max){
+				y_max = input_data[i];
+			}
 		}
 	}
 	
-	return maximum_value;
+	maximum_value_array[0] = x_max;
+	maximum_value_array[1] = y_max;
 }
 
 
@@ -110,8 +120,35 @@ void image_reverse_and_zero_offset(uint16_t* input_data, uint16_t size_of_array)
 
 void scale_data_to_screen(uint16_t* input_data, uint16_t size_of_array){
 	
+	uint16_t max_values[] = {0,0};
+	uint16_t x_scale = MAX_UINT16;
+	uint16_t y_scale = MAX_UINT16;
+	
+	maximum_of_array(max_values,input_data,size_of_array);
+	
+	printf("USABLE_X_SIZE %d    USABLE_Y_SIZE %d\n",USABLE_X_SIZE,USABLE_Y_SIZE);
+	
+	printf("max_values[0] %d    max_values[1] %d\n",max_values[0],max_values[1]);
+	
+	if(max_values[0] != 0){
+		x_scale = ((uint16_t)USABLE_X_SIZE)/max_values[0];
+	}
+	if(max_values[1] != 0){
+		y_scale = ((uint16_t)USABLE_Y_SIZE)/max_values[1];
+	}
+	uint16_t final_scale_factor = 1;
+	
+	if(x_scale < y_scale){
+		final_scale_factor = x_scale;
+	}
+	else{
+		final_scale_factor = y_scale;
+	}
+	
+	printf("x_scale = %d, y_scale %d, final_scale_factor %d\n",x_scale,y_scale,final_scale_factor);
+	
 	for(int i=0;i<size_of_array;i++){
-		input_data[i] *= SCALE_CONSTANT;
+			input_data[i] *= final_scale_factor;
 	}
 }
 
@@ -136,7 +173,7 @@ void draw_path(void const *argument){
 		osMutexRelease(path_data_mutex);
 		
 		LCD_Clear(LCD_COLOR_WHITE);
-		LCD_SetTextColor(LCD_COLOR_BLUE2);
+		LCD_SetTextColor(LCD_COLOR_BLACK);
 		
 		scale_data_to_screen(final_path_data,length_of_path);
 		image_reverse_and_zero_offset(final_path_data,length_of_path);
@@ -148,8 +185,10 @@ void draw_path(void const *argument){
 		for (int i=0;i<=length_of_path-4;i+=2){
 			LCD_DrawUniLine(final_path_data[i],final_path_data[i+1],final_path_data[i+2],final_path_data[i+3]);
 		}
-		draw_cross(final_path_data[0],final_path_data[1]);
-		
+		LCD_SetTextColor(LCD_COLOR_RED);
+		LCD_DrawCircle(final_path_data[0],final_path_data[1],CROSS_SIZE);
+		LCD_SetTextColor(LCD_COLOR_RED);
+		draw_cross(final_path_data[length_of_path-2], final_path_data[length_of_path-1]);
 		
 //		scale_data_to_screen(test_data,10);
 //		image_reverse_and_zero_offset(test_data,10);
