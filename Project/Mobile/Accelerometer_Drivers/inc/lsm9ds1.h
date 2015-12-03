@@ -15,8 +15,6 @@ typedef struct
 	uint8_t G_Axes;  
 }LSM9DS1_InitTypeDef;
 
-
-
 /** ACCELEROMETER **/
 #define XL_DATA_RATE_10Hz 0x20
 #define XL_DATA_RATE_50Hz 0x40

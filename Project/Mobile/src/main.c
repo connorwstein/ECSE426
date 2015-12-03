@@ -19,22 +19,27 @@
 
 #define STEP_THRESHOLD -75000
 #define RIEMANN_SUM_THRESHOLD 50
+
+// Step counting
 uint16_t step_count = 0;
 uint8_t step_start = 0;
 
+// Orientation (Yaw)
 float yaw = 0;
 uint16_t state = 0;
-uint32_t yaw_count = 0;
-//Circular buffer for the 2 most recent moving averages for integration
-int32_t yaw_buffer[2]; //at index 0 we have the new value and index 1 is the old value	
+int32_t yaw_buffer[2]; // At index 0 we have the new value and index 1 is the old value	
 
+// Path information
+int8_t path_data[MAX_PATH_LENGTH]; // Coordinates X, Y, X, Y ...
+uint16_t path_index = 2; // Start path index at 2, first point is (0,0)
+
+// Acceleromter and Gyro Outputs
 int32_t accelerometer_out[3], gyro_out[3];
-int8_t path_data[MAX_PATH_LENGTH]; //signed coordinates X, Y, X, Y ...
-uint16_t path_index = 2; //start path index at 2, first point is (0,0)
 
-uint8_t button_has_been_pressed;
-uint8_t enable_sensor_interrupt = 0;
+// Enables
+uint8_t button_has_been_pressed, enable_sensor_interrupt = 0;
 
+// Threading
 osThreadId sensor_reader_thread;
 osThreadId transmission_thread;
 osThreadId button_detector_thread;
@@ -90,9 +95,7 @@ void button_detector(void const *argument){
 		if(delay_counter>50){
 		
 			current_key = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0);
-			
-			//printf("current_key %d\n",current_key);
-			
+						
 			if(current_key == 1 && previous_key == 0){
 				// Key change detected (key press)
 				button_has_been_pressed += 1;
@@ -110,7 +113,6 @@ void button_detector(void const *argument){
 					path_index = 2;
 					yaw = 0;
 					state = 0;
-					yaw_count = 0;
 					memset(yaw_buffer, 0, sizeof(yaw_buffer));
 					enable_sensor_interrupt = 1;
 					EXTI_GenerateSWInterrupt(EXTI_Line0);	// start thread execution 
@@ -154,14 +156,7 @@ void transmission(void const *argument){
 	
 	while(1){
 		osSignalWait(1,osWaitForever);
-		scale_path();	
-//		//cc2500_Transmit_Data((uint8_t*)path_data,MAX_PATH_LENGTH);
-//		
-//		for(int i=0; i<MAX_PATH_LENGTH;i++){
-//			path_data[i] = i;
-//			printf("%d\n",i);
-//		}
-		
+		scale_path();			
 		cc2500_Transmit_Data((uint8_t*)path_data,path_index);
 	}
 }
@@ -328,9 +323,8 @@ void init_EXT10_interrupts(void){
     NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 0x00; // Set priority
     NVIC_InitStruct.NVIC_IRQChannelSubPriority = 0x00; // Set sub priority
     NVIC_Init(&NVIC_InitStruct); // Add to the NVIC
-		printf("interrupt init complete\n");
-		
-		
+		printf("Interrupt init complete\n");
+	
 }
 
 /*

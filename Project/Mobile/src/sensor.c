@@ -80,7 +80,6 @@ void update_xl_buffer(float new_reading, xl_buffer* m_a){
 	m_a->data[current_index]=new_reading;
 	m_a->sum+=new_reading;
 	m_a->index++;
-
 }
 
 void init_xl_buffer(xl_buffer* buffer){
