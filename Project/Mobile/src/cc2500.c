@@ -14,57 +14,50 @@ __IO uint32_t  CC2500Timeout = CC2500_FLAG_TIMEOUT;
 
 uint8_t command_strobe_response,num_bytes_in_FIFO,num_bytes_to_read;
 uint8_t data_already_sent, amount_of_data_to_send;
+uint8_t base_address = BASE_ADDRESS;
+uint8_t number_of_packets_sent;
 
 void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
-	printf("in transmit data\n");
+	//printf("in transmit data\n");
+	number_of_packets_sent = 0;
 	data_already_sent = 0;
 	while(data_already_sent < num_bytes){
 		
-		osDelay(1000);
+		osDelay(100);
 		cc2500_Read_Status_Register(&command_strobe_response,CC2500_TXBYTES);
-		
+		//printf("command strobe %d\n",command_strobe_response);
 		if(command_strobe_response == 0){
 
-			if(data_already_sent + SIZE_OF_FIFO <= num_bytes){
-				amount_of_data_to_send = SIZE_OF_FIFO;
+			number_of_packets_sent++;
+			printf("number_of_packets_sent %d\n", number_of_packets_sent);
+			
+			if(data_already_sent + USABLE_FIFO_FOR_DATA <= num_bytes){
+				amount_of_data_to_send = USABLE_FIFO_FOR_DATA;
 			}
 			else{
 				amount_of_data_to_send = num_bytes - data_already_sent;
 			}
 			
-			printf("amount_of_data_to_send %d\n", amount_of_data_to_send);
+			//printf("amount_of_data_to_send %d\n", amount_of_data_to_send);
 			
 			cc2500_Write(&amount_of_data_to_send, CC2500_FIFO, 1);
+			cc2500_Write(&base_address, CC2500_FIFO, 1);
 			cc2500_Write(input_array+data_already_sent, CC2500_FIFO, amount_of_data_to_send);
 			
 			cc2500_Read_Status_Register(&command_strobe_response,CC2500_TXBYTES);
-			printf("TXBYTES = %d\n",command_strobe_response);
+			//printf("TXBYTES = %d\n",command_strobe_response);
 			
 			cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_STX);
 			
 			data_already_sent += amount_of_data_to_send;
 		}
-		else{
-			printf("Strobe fail\n");
-		}
 		
+		cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_STX);
 		cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SNOP);
-		if(command_strobe_response>>4 == 7){
+		if(command_strobe_response>>4 == TX_UNDERFLOW){
 			cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SFTX);
 		}
 	}
-}
-
-
-uint8_t cc2500_Receive_Data(uint8_t* output_array){
-	cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SRX);
-	cc2500_Read_Status_Register(&num_bytes_in_FIFO, CC2500_RXBYTES);
-	
-	num_bytes_to_read = fmin(SIZE_OF_FIFO,num_bytes_in_FIFO);
-	
-	cc2500_Read(output_array, CC2500_FIFO,num_bytes_to_read);
-	
-	return num_bytes_to_read;
 }
 
 
@@ -263,7 +256,6 @@ void cc2500_LowLevel_Init(void)
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
   GPIO_Init(CC2500_SPI_GDO0_GPIO_PORT, &GPIO_InitStructure);
-  
 	
 	cc2500_configure_registers();
 }

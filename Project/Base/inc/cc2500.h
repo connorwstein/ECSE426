@@ -318,14 +318,14 @@ CC2500 Register settings
 #define VAL_CC2500_PKTLEN 	0xFF
 
 //Enable automatic flush of RX FIFO when CRC is not OK.
-#define VAL_CC2500_PKTCTRL1 0x08	
+#define VAL_CC2500_PKTCTRL1 0x09	
 
 //CRC calculation in TX and CRC check in RX enabled
 //Variable packet length
 #define VAL_CC2500_PKTCTRL0 0x05	
 
 //default setting
-#define VAL_CC2500_ADDR 		0x00	
+#define VAL_CC2500_ADDR 		0x3b	
 
 //default setting
 #define VAL_CC2500_CHANNR 	0x00

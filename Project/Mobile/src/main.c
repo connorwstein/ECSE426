@@ -20,6 +20,8 @@
 #define STEP_THRESHOLD -75000
 #define RIEMANN_SUM_THRESHOLD 50
 
+#define DEBOUNCE_CONSTANT 100
+
 // Step counting
 uint16_t step_count = 0;
 uint8_t step_start = 0;
@@ -92,7 +94,7 @@ void button_detector(void const *argument){
 		
 		delay_counter++;
 
-		if(delay_counter>50){
+		if(delay_counter>DEBOUNCE_CONSTANT){
 		
 			current_key = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0);
 						
@@ -102,13 +104,13 @@ void button_detector(void const *argument){
 				
 				printf("button pressed \n");
 				delay_counter = 0;
-				if(button_has_been_pressed % 2 == 0){
-					printf("transmission thread signal set");
+				if(button_has_been_pressed > 1){
+					printf("transmission thread signal set\n");
 					enable_sensor_interrupt = 0;
 					osSignalSet(transmission_thread,1);
 				}
-				else if(button_has_been_pressed > 0){
-					printf("start path recording");
+				else{
+					printf("start path recording\n");
 					memset(path_data, 0, sizeof(path_data)); 
 					path_index = 2;
 					yaw = 0;
@@ -156,8 +158,14 @@ void transmission(void const *argument){
 	
 	while(1){
 		osSignalWait(1,osWaitForever);
-		scale_path();			
-		cc2500_Transmit_Data((uint8_t*)path_data,path_index);
+		//scale_path();			
+		//cc2500_Transmit_Data((uint8_t*)path_data,path_index);
+		
+		for(int i = 0; i<200; i++){
+			path_data[i] = i;
+		}
+		
+		cc2500_Transmit_Data((uint8_t*)path_data,200);
 	}
 }
 
@@ -293,7 +301,7 @@ void sensor_reader(void const *argument){
 /**
 	@brief Initializes the interrupts and interrupt handler for the accelerometer 
 */
-void init_EXT10_interrupts(void){
+void init_EXTI0_interrupts(void){
 			
 		GPIO_InitTypeDef GPIO_InitStruct;
     EXTI_InitTypeDef EXTI_InitStruct;
@@ -327,6 +335,8 @@ void init_EXT10_interrupts(void){
 	
 }
 
+
+
 /*
  * main: initialize and start the system
  */
@@ -336,7 +346,7 @@ int main (void) {
 	sensor_reader_thread = osThreadCreate(osThread(sensor_reader),NULL);
 	if(sensor_reader_thread == NULL) printf("Error creating sensor thread\n"); 
 	init_sensor();
-	init_EXT10_interrupts();
+	init_EXTI0_interrupts();
 	
 	cc2500_start_up_procedure();
 

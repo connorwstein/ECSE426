@@ -18,17 +18,20 @@
 
 #define MAX_PATH_LENGTH 200
 #define MAX_UINT16 65535
+#define NUMBER_OF_NON_DATA_BYTES 2
 
 #define X_ZERO_OFFSET 10
-#define Y_ZERO_OFFSET 10
-#define USABLE_X_SIZE 220//240 - (X_ZERO_OFFSET*2)
-#define USABLE_Y_SIZE 300//320 - (Y_ZERO_OFFSET*2)
+#define Y_ZERO_OFFSET 20
+#define USABLE_X_SIZE 240 - (X_ZERO_OFFSET*2)
+#define USABLE_Y_SIZE 320 - (Y_ZERO_OFFSET*2)
 #define SCALE_CONSTANT 5
-#define IMAGE_REVERSE_OFFSET 240
+#define X_REVERSE_OFFSET 240
+#define Y_REVERSE_OFFSET 320
 #define CROSS_SIZE 5
 uint8_t fifo_contents[SIZE_OF_FIFO];
 uint16_t path_data[MAX_PATH_LENGTH];
 uint16_t length_of_path;
+uint8_t number_of_packets_received = 0;
 
 void receiving(void const *argument);
 void draw_path(void const *argument);
@@ -57,31 +60,32 @@ void receiving(void const *argument){
 
 	while(1){
 		osSignalWait(0x01,osWaitForever);
-		
-		osDelay(500);
+
 		num_bytes_to_read = cc2500_Receive_Data(fifo_contents);
 		
 		printf("num_bytes_to_read %d\n",num_bytes_to_read);
 		
 		
 		if(num_bytes_to_read>0){
+			number_of_packets_received++;
+			
+			printf("number_of_packets_received %d\n",number_of_packets_received);
+			
 			osMutexWait(path_data_mutex,osWaitForever);
-			eight_to_sixteen(path_data+length_of_path,fifo_contents+1,num_bytes_to_read-1);
+			eight_to_sixteen(path_data+length_of_path,fifo_contents+NUMBER_OF_NON_DATA_BYTES,num_bytes_to_read-NUMBER_OF_NON_DATA_BYTES);
 			osMutexRelease(path_data_mutex);
 			
-			for(int i=0;i<num_bytes_to_read-1;i++){
+			for(int i=0;i<num_bytes_to_read-NUMBER_OF_NON_DATA_BYTES;i++){
 				printf("fifo_contents[%d] is %d\n", i,fifo_contents[i]);
 			}
-//			for(int i=0;i<num_bytes_to_read-1;i++){
-//				printf("path_data[%d] is %d\n", i,path_data[i]);
-//			}
 			
-			length_of_path += num_bytes_to_read-1;
+			length_of_path += num_bytes_to_read-NUMBER_OF_NON_DATA_BYTES;
 
 			osSignalSet(draw_path_thread,0x01);
 		}
 	}
 }
+
 
 
 uint16_t maximum_of_array(uint16_t* maximum_value_array, uint16_t* input_data, uint16_t size_of_array){
@@ -110,10 +114,10 @@ void image_reverse_and_zero_offset(uint16_t* input_data, uint16_t size_of_array)
 	for(int i=0;i<size_of_array;i++){
 		if(i%2 == 0){
 			input_data[i] += X_ZERO_OFFSET;
-			input_data[i] = IMAGE_REVERSE_OFFSET - input_data[i];
 		}
 		else{
 			input_data[i] += Y_ZERO_OFFSET;
+			input_data[i] = Y_REVERSE_OFFSET - input_data[i];
 		}
 	}
 }
@@ -165,6 +169,8 @@ void draw_path(void const *argument){
 
 	uint16_t test_data[10]={0,0,1,1,10,2,15,20,10,50};
 	
+	uint8_t packet_receive_string[14] = {' ',' ','P','K','T',' ','R','E','C','E','I','V','E','D'};
+	
 	
 	while(1){
 		osSignalWait(0x01,osWaitForever);
@@ -190,6 +196,10 @@ void draw_path(void const *argument){
 		LCD_SetTextColor(LCD_COLOR_RED);
 		draw_cross(final_path_data[length_of_path-2], final_path_data[length_of_path-1]);
 		
+		packet_receive_string[0] = number_of_packets_received + '0';
+
+		LCD_DisplayStringLine(0,packet_receive_string);
+		
 //		scale_data_to_screen(test_data,10);
 //		image_reverse_and_zero_offset(test_data,10);
 //		
@@ -210,6 +220,8 @@ void EXTI4_IRQHandler(void){
 			osSignalSet(receiving_thread,0x01);
 	}
 }
+
+
 /*
  * main: initialize and start the system
  */
@@ -233,7 +245,7 @@ int main (void) {
   LCD_SetLayer(LCD_FOREGROUND_LAYER);
 	
 	LCD_Clear(LCD_COLOR_WHITE);
-	
+
 	/* wireless chipset initialization */
 	cc2500_start_up_procedure();
 	
@@ -250,6 +262,9 @@ int main (void) {
 	init_EXTI_interrupt();
 
 	EXTI_GenerateSWInterrupt(EXTI_Line4);
+
+	uint8_t ready_string[] = {'R','E','A','D','Y'};
+	LCD_DisplayStringLine(0,ready_string);
 
 	osKernelStart ();                         // start thread execution 
 	

@@ -11,6 +11,7 @@
 
 #include "cc2500.h"
 #include "math.h"
+#include "osObjects.h"
 
 __IO uint32_t  CC2500Timeout = CC2500_FLAG_TIMEOUT;   
 
@@ -23,19 +24,6 @@ __IO uint32_t  CC2500Timeout = CC2500_FLAG_TIMEOUT;
 
 //variables used for receiving data
 uint8_t command_strobe_response,num_bytes_in_FIFO;
-
-void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
-	cc2500_Write(&num_bytes, CC2500_FIFO, 1);
-	cc2500_Write(input_array, CC2500_FIFO, num_bytes);
-	
-	cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_STX);
-	if(command_strobe_response>>4 == 7){
-		cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SFTX);
-	}	
-}
-
-
-
 /**
   * @brief  Reads data from the RX FIFO, and writes it to the output_array. 
   * @param  output_array : pointer to the buffer that receives the data read from the RX FIFO.
@@ -199,16 +187,16 @@ void cc2500_start_up_procedure(){
 	cc2500_LowLevel_Init();
 	
 	//delay
-	for(int i=0;i<10000000;i++);
+	osDelay(100);
 	
 	//then reset the driver
 	cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SRES);
 	
-	//initialize again
+	//configure registers
 	cc2500_LowLevel_Init();
 	
 	//delay
-	for(int i=0;i<10000000;i++);
+	osDelay(100);
 }
 
 
@@ -286,7 +274,6 @@ void cc2500_LowLevel_Init(void)
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
   GPIO_Init(CC2500_SPI_GDO0_GPIO_PORT, &GPIO_InitStructure);
-  
 	
 	cc2500_configure_registers();
 }
