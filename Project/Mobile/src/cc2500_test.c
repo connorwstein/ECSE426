@@ -2,8 +2,12 @@
 #include "stdio.h"
 #include "osObjects.h" 
 
-uint8_t test_data[] = {0,0,0,1,1,1,1,0,0,0,1,0,0,1,1,2,2,1,1,0};
 
+#define SIZE_OF_LONG_TRANSMIT 500
+uint8_t test_data[] = {0,0,0,100,100,100,100,0,0,0,100,0,0,100,100,200,200,100,100,0};
+uint8_t long_transmit_data[SIZE_OF_LONG_TRANSMIT];
+	
+	
 void test_one_command_strobe(uint8_t correct_response, uint8_t register_address){
 	osDelay(100);
 	uint8_t command_strobe_response;
@@ -111,6 +115,21 @@ void test_frequency(){
 void test_transmit(){
 	cc2500_Transmit_Data(test_data,20);
 	
+
+	
+}
+
+void long_transmit(){
+	for(int i=0;i<SIZE_OF_LONG_TRANSMIT;i++){
+		if(i%2==0){
+			long_transmit_data[i] = i%100;			
+		}
+		else{
+			long_transmit_data[i] = i/10;			
+		}
+	}
+	
+	cc2500_Transmit_Data(long_transmit_data,SIZE_OF_LONG_TRANSMIT);
 }
 
 
@@ -128,7 +147,9 @@ void test_transmit(){
 //	
 //	test_frequency();
 //	
-//	test_transmit();
+//	//test_transmit();
+//	
+//	long_transmit();
 //	
 //	printf("\n\n*****done testing*****\n\n");
 //}

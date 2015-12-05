@@ -11,9 +11,6 @@
 //Pin 17: SPI Slave enable -> PB12
 //Pin 18: SPI MOSI -> PB15
 
-#define RECEIVE_MODE 1
-#define TRANSMIT_MODE 2
-
 #define CC2500_IOCFG2 0x00
 #define CC2500_IOCFG1 0x01
 #define CC2500_IOCFG0 0x02
@@ -105,7 +102,7 @@
 #define VAL_CC2500_IOCFG0 	0x06	
 
 //threshold at which signal is set on GDO pin
-#define VAL_CC2500_FIFOTHR 	0x07
+#define VAL_CC2500_FIFOTHR 	0x0E
 
 //maximum length of each packet (set to 255 bytes right now)
 #define VAL_CC2500_PKTLEN 	0xFF
@@ -127,32 +124,15 @@
 
 
 
-//New numbers for group 20 frequency
-//0x5D
-//0x95
-//0x45
-
-
-//#define VAL_CC2500_FREQ2 		0x5D	
-//#define VAL_CC2500_FREQ1 		0x95	
-//#define VAL_CC2500_FREQ0 		0x45	
-
-
 //New numbers for our group 2 frequency
 //01011101 0x5D
 //10010011 0x93
 //11011010 0xDA
 
-
 #define VAL_CC2500_FREQ2 		0x5D	
 #define VAL_CC2500_FREQ1 		0x93	
 #define VAL_CC2500_FREQ0 		0xDA	
 
-
-// freq set to 2.433 GHz, note f_xosc = 26MHz
-//#define VAL_CC2500_FREQ2 		0x5D	
-//#define VAL_CC2500_FREQ1 		0x94	
-//#define VAL_CC2500_FREQ0 		0x02	
 
 #define VAL_CC2500_MDMCFG4 	0x0E
 #define VAL_CC2500_MDMCFG3 	0x3B
@@ -230,7 +210,10 @@
 #define CC2500_FLAG_TIMEOUT         ((uint32_t)0x1000)
 #define CC2500_CS_LOW()       GPIO_ResetBits(CC2500_SPI_CS_GPIO_PORT, CC2500_SPI_CS_PIN)
 #define CC2500_CS_HIGH()      GPIO_SetBits(CC2500_SPI_CS_GPIO_PORT, CC2500_SPI_CS_PIN)
-#define SIZE_OF_FIFO 63
+#define AMOUNT_OF_WRITABLE_PATH_DATA 62
+#define PAYLOAD_LENGTH 63
+#define SIZE_OF_FIFO 64
+#define BASE_ADDRESS 0x3b
 
 uint8_t cc2500_SendByte(uint8_t byte);
 void cc2500_Write(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite);
@@ -241,6 +224,5 @@ void cc2500_One_Byte_Read(uint8_t* pBuffer, uint8_t ReadAddr);
 void cc2500_LowLevel_Init(void);
 uint32_t cc2500_TIMEOUT_UserCallback(void);
 void cc2500_configure_registers(void);
-uint8_t cc2500_Receive_Data(uint8_t* output_array);
-void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes);
+void cc2500_Transmit_Data(uint8_t* input_array,uint16_t num_bytes);
 void cc2500_start_up_procedure(void);

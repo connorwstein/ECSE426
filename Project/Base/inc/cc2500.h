@@ -4,15 +4,10 @@
 //Pin 1: Ground -> GND
 //Pin 2: VCC -> VCC
 //Pin 13: GDO0 -> PE4
-//SPI2 PIN CANNOT CHANGE RANDOMLY SPECIFIED IN THE DISCOVERY BOARD MANUAL FOR SPI2
 //Pin 15: SPI MISO -> PE5 	
 //Pin 16: SPI Clock -> PE2
 //Pin 17: SPI Slave enable -> PE3
 //Pin 18: SPI MOSI -> PE6
-
-#define RECEIVE_MODE 1
-#define TRANSMIT_MODE 2
-
 
 
 /******************************************************************************/
@@ -311,21 +306,21 @@ CC2500 Register settings
 	* In TX the pin will de-assert if the TX FIFO underflows.*/
 #define VAL_CC2500_IOCFG0 	0x06	
 
-//Equal threshold for RX and TX
-#define VAL_CC2500_FIFOTHR 	0x07
+//Equal threshold for RX and TX. Set to 1 byte for TX and 64 bytes for RX
+#define VAL_CC2500_FIFOTHR 	0x0E
 
 //Packet length = 255 bytes
 #define VAL_CC2500_PKTLEN 	0xFF
 
-//Enable automatic flush of RX FIFO when CRC is not OK.
-#define VAL_CC2500_PKTCTRL1 0x08	
+//Enable automatic flush of RX FIFO when CRC is not OK. Enable addressing.
+#define VAL_CC2500_PKTCTRL1 0x09	
 
 //CRC calculation in TX and CRC check in RX enabled
 //Variable packet length
 #define VAL_CC2500_PKTCTRL0 0x05	
 
-//default setting
-#define VAL_CC2500_ADDR 		0x00	
+//set address of this board to 3b.
+#define VAL_CC2500_ADDR 		0x3b	
 
 //default setting
 #define VAL_CC2500_CHANNR 	0x00
@@ -426,8 +421,10 @@ CC2500 Register settings
 #define CC2500_CS_LOW()       GPIO_ResetBits(CC2500_SPI_CS_GPIO_PORT, CC2500_SPI_CS_PIN)
 #define CC2500_CS_HIGH()      GPIO_SetBits(CC2500_SPI_CS_GPIO_PORT, CC2500_SPI_CS_PIN)
 
+//max number of bytes to read from FIFO
+#define SIZE_OF_FIFO 64
 
-#define SIZE_OF_FIFO 63
+//RX_OVERFLOW signal value
 #define RX_OVERFLOW 6
 
 uint8_t cc2500_SendByte(uint8_t byte);

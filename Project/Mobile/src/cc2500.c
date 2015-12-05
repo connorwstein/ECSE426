@@ -13,60 +13,51 @@ __IO uint32_t  CC2500Timeout = CC2500_FLAG_TIMEOUT;
 
 
 uint8_t command_strobe_response,num_bytes_in_FIFO,num_bytes_to_read;
-uint8_t data_already_sent, amount_of_data_to_send;
+uint8_t amount_of_payload_to_send, total_amount_of_data_to_send;
+uint16_t data_already_sent;
+uint8_t base_address = BASE_ADDRESS;
+uint8_t number_packets_sent;
 
-void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes){
+void cc2500_Transmit_Data(uint8_t* input_array,uint16_t num_bytes){
 	printf("in transmit data\n");
 	data_already_sent = 0;
+	number_packets_sent = 0;
 	while(data_already_sent < num_bytes){
 		
 		osDelay(100);
 		cc2500_Read_Status_Register(&command_strobe_response,CC2500_TXBYTES);
 		
 		if(command_strobe_response == 0){
-
-			if(data_already_sent + SIZE_OF_FIFO <= num_bytes){
-				amount_of_data_to_send = SIZE_OF_FIFO;
+			
+			if(data_already_sent + AMOUNT_OF_WRITABLE_PATH_DATA <= num_bytes){
+				amount_of_payload_to_send = AMOUNT_OF_WRITABLE_PATH_DATA;
 			}
 			else{
-				amount_of_data_to_send = num_bytes - data_already_sent;
+				amount_of_payload_to_send = (uint8_t)(num_bytes - data_already_sent);
 			}
 			
-			printf("amount_of_data_to_send %d\n", amount_of_data_to_send);
+			printf("amount_of_data_to_send %d\n", amount_of_payload_to_send);
 			
-			cc2500_Write(&amount_of_data_to_send, CC2500_FIFO, 1);
-			cc2500_Write(input_array+data_already_sent, CC2500_FIFO, amount_of_data_to_send);
+			total_amount_of_data_to_send = amount_of_payload_to_send + 1;
 			
-			cc2500_Read_Status_Register(&command_strobe_response,CC2500_TXBYTES);
-			printf("TXBYTES = %d\n",command_strobe_response);
+			cc2500_Write(&total_amount_of_data_to_send, CC2500_FIFO, 1);
+			cc2500_Write(&base_address, CC2500_FIFO, 1);
+			cc2500_Write(input_array+data_already_sent, CC2500_FIFO, amount_of_payload_to_send);
 			
 			cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_STX);
 			
-			data_already_sent += amount_of_data_to_send;
+			data_already_sent += amount_of_payload_to_send;
+			
+			number_packets_sent++;
+			
+			printf("number_packets_sent %d\n",number_packets_sent);
 		}
 		else{
 			printf("Strobe fail\n");
-		}
-		
-		cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SNOP);
-		if(command_strobe_response>>4 == 7){
 			cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SFTX);
 		}
 	}
 }
-
-
-uint8_t cc2500_Receive_Data(uint8_t* output_array){
-	cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SRX);
-	cc2500_Read_Status_Register(&num_bytes_in_FIFO, CC2500_RXBYTES);
-	
-	num_bytes_to_read = fmin(SIZE_OF_FIFO,num_bytes_in_FIFO);
-	
-	cc2500_Read(output_array, CC2500_FIFO,num_bytes_to_read);
-	
-	return num_bytes_to_read;
-}
-
 
 
 /**
