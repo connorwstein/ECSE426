@@ -1,13 +1,20 @@
-
+/**
+  ******************************************************************************
+  * @file    cc2500.c
+	* @author  Connor Stein (connor.stein@mail.mcgill.ca)
+  * @version V1.0.0
+  * @date    12-01-2015
+  * @brief   Implementation of the LSM9DS1 driver. All communication is done 
+	through the SPI interface. 
+  ****************************************************************************** 
+*/
 #include "lsm9ds1.h"
 
 __IO uint32_t  LSM9DS1Timeout = LSM9DS1_FLAG_TIMEOUT;
 
-
-
-
 /**
-  * @brief  Read LSM9DS1 output register, and calculate the acceleration 
+  * @brief  Get the accelerometer readings from the LSM9DS1, fills the parameter buffer
+		with the X, Y, and Z accelerations in milli-gs. 
   * @param  3 32bit int buffer to store data
   * @retval None
   */
@@ -16,6 +23,7 @@ void LSM9DS1_Read_XL(int32_t* out)
   uint8_t buffer[6];
   uint8_t crtl, i;
    
+	//Read the raw accelerometer registers
   LSM9DS1_Read(&crtl, LSM9DS1_CTRL_REG6_XL, 1); 
 	LSM9DS1_Read(buffer, LSM9DS1_OUT_X_H_XL, 1);	
 	LSM9DS1_Read(buffer+1, LSM9DS1_OUT_X_L_XL, 1);
@@ -23,6 +31,8 @@ void LSM9DS1_Read_XL(int32_t* out)
 	LSM9DS1_Read(buffer+3, LSM9DS1_OUT_Y_L_XL, 1);
 	LSM9DS1_Read(buffer+4, LSM9DS1_OUT_Z_H_XL, 1);
 	LSM9DS1_Read(buffer+5, LSM9DS1_OUT_Z_L_XL, 1);
+	
+	//Apply the appropriate sensitivity factors depending on the scale
 	switch(crtl & 0x18) 
   {
     case XL_SCALE_2G:
@@ -55,14 +65,16 @@ void LSM9DS1_Read_XL(int32_t* out)
 }
 
 /**
-  * @brief  Read LSM9DS1 output register, and calculate the angular velocity 
+  * @brief  Get the gyroscope readings from the LSM9DS1, fills the parameter buffer
+	with X, Y and Z readings in millidegrees per second
   * @param  3 32bit int buffer to store data
   * @retval None
   */
 void LSM9DS1_Read_G(int32_t* out){
 	uint8_t buffer[6];
 	uint8_t crtl, i;
-	 
+	
+	//Read all the raw register values
 	LSM9DS1_Read(&crtl, LSM9DS1_CTRL_REG1_G, 1); 
 	LSM9DS1_Read(buffer, LSM9DS1_OUT_X_H_G, 1);	
 	LSM9DS1_Read(buffer+1, LSM9DS1_OUT_X_L_G, 1);
@@ -70,6 +82,9 @@ void LSM9DS1_Read_G(int32_t* out){
 	LSM9DS1_Read(buffer+3, LSM9DS1_OUT_Y_L_G, 1);
 	LSM9DS1_Read(buffer+4, LSM9DS1_OUT_Z_H_G, 1);
 	LSM9DS1_Read(buffer+5, LSM9DS1_OUT_Z_L_G, 1);
+	
+	//Fill the parameter buffer with the appropriately scaled values
+	//(concatenating the low and high bytes into a single value)
 	switch(crtl & 0x18) 
   {
     case G_SCALE_245_DPS:
@@ -297,10 +312,8 @@ void LSM9DS1_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead)
   /* Receive the data that will be read from the device (MSB First) */
   while(NumByteToRead > 0x00)
   {
-		//printf("reading address %d\n",ReadAddr);
     /* Send dummy byte (0x00) to generate the SPI clock to LSM9DS1 (Slave device) */
     *pBuffer = LSM9DS1_SendByte(DUMMY_BYTE);
-		//printf("Recevied a byte: %d\n", *pBuffer);
     NumByteToRead--;
     pBuffer++;
   }

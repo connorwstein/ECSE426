@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    accelerometer.c
+  * @file    sensor.c
   * @author  Connor Stein (connor.stein@mail.mcgill.ca) & Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca)
   * @version V1.0.0
   * @date    10-28-2015
@@ -10,17 +10,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "stm32f4xx.h"                  // Device header
+#include "stm32f4xx.h"                  
 #include "stm32f4xx_conf.h"
 
 #include "sensor.h"
-//#include "moving_average.h"
 
+//Constants
 #define NUM_MG_PER_G 1000
 #define BUFFER_DEPTH_XL 50
 #define BUFFER_DEPTH_G 50
 #define PI 3.14159265358
 
+//Acceleration calibration matrix constants
 #define ACC11 1 
 #define ACC12 0 
 #define ACC13 0
@@ -34,6 +35,7 @@
 #define ACC33 1
 #define ACC30 0 //Add to the z 
 
+//Gyroscope calibration matrix constants
 #define GYR11 1 
 #define GYR12 0 
 #define GYR13 0
@@ -49,12 +51,14 @@
 
 #define DEGREES(x) (180.0*x/PI)
 
+//Structure for the accelerometer moving average
 typedef struct{
 	float data[BUFFER_DEPTH_XL];
 	int index;
 	float sum;
 } xl_buffer;
 
+//Structure for the gyroscope moving average
 typedef struct{
 	float data[BUFFER_DEPTH_G];
 	int index;
@@ -64,6 +68,13 @@ typedef struct{
 xl_buffer Ax1_moving_average, Ay1_moving_average, Az1_moving_average;
 g_buffer Gx1_moving_average, Gy1_moving_average, Gz1_moving_average;
 
+/**
+	@brief Update an individual gyroscope axis buffer with a new reading. To be used only within
+	this file, by update_moving_average functions.
+	@param  new_reading : The new reading to be added to the axis buffer
+					m_a : moving average buffer structure
+	@retval None
+*/
 void update_g_buffer(float new_reading, g_buffer* m_a){
 	int current_index=m_a->index % BUFFER_DEPTH_G;
 	float old_value=m_a->data[current_index];
@@ -73,6 +84,13 @@ void update_g_buffer(float new_reading, g_buffer* m_a){
 	m_a->index++;
 }
 
+/**
+	@brief Update an individual accelerometer axis buffer with a new reading. To be used only within
+	this file, by update_moving_average functions.
+	@param  new_reading : The new reading to be added to the axis buffer
+					m_a : moving average buffer structure
+	@retval None
+*/
 void update_xl_buffer(float new_reading, xl_buffer* m_a){	
 	int current_index=m_a->index % BUFFER_DEPTH_XL;
 	float old_value=m_a->data[current_index];
@@ -125,7 +143,7 @@ void update_moving_average_xl(int32_t Ax, int32_t Ay, int32_t Az){
 }
 
 /**
-	@brief Updates the buffers for all three axis
+	@brief Updates the buffers for all three axis for the gyroscope
 */
 void update_moving_average_g(int32_t Gx, int32_t Gy, int32_t Gz){
 	update_g_buffer(Gx*GYR11 + Gy*GYR12 + Gz*GYR13 + GYR10,&Gx1_moving_average);
@@ -168,10 +186,10 @@ void init_sensor(void){
 	init.G_Scale =  G_SCALE_500_DPS;
 	LSM9DS1_Init(&init);	
 	
-	//Enable interrupts
-	uint8_t interrupts = 0x02; //enable both accelerometer and gyro 
+	//Enable interrupts, both the acclerometer and gyroscope
+	uint8_t interrupts = 0x02;  
 	LSM9DS1_Write(&interrupts,LSM9DS1_INT1_CTRL, 1);
-	printf("Enabled interrupts\n");
+
 	// Initialize buffers
 	init_xl_buffer(&Ax1_moving_average);
 	init_xl_buffer(&Ay1_moving_average);

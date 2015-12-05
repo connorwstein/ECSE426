@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//#include "lsm9ds1_test.h"
 #include "lsm9ds1.h"
 #include "sensor.h"
 #include "cc2500.h"

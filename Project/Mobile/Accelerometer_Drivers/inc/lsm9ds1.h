@@ -1,3 +1,14 @@
+/**
+  ******************************************************************************
+  * @file    lsm9ds1.h
+	* @author  Connor Stein (connor.stein@mail.mcgill.ca)
+  * @version V1.0.0
+  * @date    12-01-2015
+  * @brief   Header file for the LSM9DS1 driver, exposes functions for reading 
+	from the accelerometer and gyroscope as well as reading and writing to all 
+	registers on the board.
+  ****************************************************************************** 
+*/
 #ifndef __LSM9DS1_H
 #define __LSM9DS1_H
 
@@ -39,7 +50,6 @@ typedef struct
 /** END ACCELEROMETER **/
 
 /** GYROSCOPE **/
-//ctrl reg1_g
 #define G_DATA_RATE_14_9 0x20
 #define G_DATA_RATE_59_5 0x40
 #define G_DATA_RATE_119 0x60
@@ -55,14 +65,10 @@ typedef struct
 #define G_SENSITIVITY_500_DPS 17.5
 #define G_SENSITIVITY_2000_DPS 70
 
-//Ctrl reg 4
 #define G_ENABLE_X 0x08
 #define G_ENABLE_Y 0x10
 #define G_ENABLE_Z 0x20
 /** END GYROSCOPE **/
-
-/** INTERRUPT **/
-
 
 /** REGISTER MAPPING **/
 #define LSM9DS1_ACT_THS	0x04
@@ -268,7 +274,6 @@ void LSM9DS1_Write(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite)
 void LSM9DS1_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead);
 uint8_t LSM9DS1_SendByte(uint8_t byte);
 void LSM9DS1_Init(LSM9DS1_InitTypeDef* init);
-
 /** END FUNCTION PROTOTYPES **/
 
 #endif
