@@ -22,7 +22,7 @@
 
 
 /******************************************************************************
-Configuration Register Details – Registers with Preserved Values in SLEEP State
+Configuration Register Details ? Registers with Preserved Values in SLEEP State
 ******************************************************************************/
 
 //GDO2 and GDO1 output configuration
@@ -66,7 +66,7 @@ Configuration Register Details – Registers with Preserved Values in SLEEP State
 			 received that is different from the previous bit, and decreases the
 			 counter by 8 each time a bit is received that is the same as the
 			 last bit.
-			 A threshold of 4·PQT for this counter is used to gate sync word
+			 A threshold of 4?PQT for this counter is used to gate sync word
 			 detection. When PQT=0 a sync word is always accepted.
 * 4: Reserved
 * 3: CRC_AUTOFLUSH Enable automatic flush of RX FIFO when CRC is not OK. This
@@ -89,7 +89,7 @@ Configuration Register Details – Registers with Preserved Values in SLEEP State
 			 received that is different from the previous bit, and decreases the
 			 counter by 8 each time a bit is received that is the same as the
 			 last bit.
-			 A threshold of 4·PQT for this counter is used to gate sync word
+			 A threshold of 4?PQT for this counter is used to gate sync word
 			 detection. When PQT=0 a sync word is always accepted.
 * 4: Reserved
 * 3: CRC_AUTOFLUSH Enable automatic flush of RX FIFO when CRC is not OK. This
@@ -186,7 +186,7 @@ Configuration Register Details – Registers with Preserved Values in SLEEP State
 
 
 /******************************************************************************
-Configuration Register Details – Registers that Lose Programming in SLEEP State
+Configuration Register Details ? Registers that Lose Programming in SLEEP State
 ******************************************************************************/
 
 //Frequency Synthesizer Calibration Control
@@ -210,7 +210,7 @@ Status Register Details
 //Chip part number = 128
 #define CC2500_PARTNUM 0x30
 
-//VERSION – Chip ID = 3
+//VERSION ? Chip ID = 3
 #define CC2500_VERSION 0x31
 
 //Frequency Offset Estimate from Demodulator
@@ -318,14 +318,14 @@ CC2500 Register settings
 #define VAL_CC2500_PKTLEN 	0xFF
 
 //Enable automatic flush of RX FIFO when CRC is not OK.
-#define VAL_CC2500_PKTCTRL1 0x09	
+#define VAL_CC2500_PKTCTRL1 0x08	
 
 //CRC calculation in TX and CRC check in RX enabled
 //Variable packet length
 #define VAL_CC2500_PKTCTRL0 0x05	
 
 //default setting
-#define VAL_CC2500_ADDR 		0x3b	
+#define VAL_CC2500_ADDR 		0x00	
 
 //default setting
 #define VAL_CC2500_CHANNR 	0x00

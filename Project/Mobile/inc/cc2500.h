@@ -102,7 +102,7 @@
   */
 
 #define VAL_CC2500_IOCFG2 	0x29 		
-#define VAL_CC2500_IOCFG0 	0x06 //change to 0x07	
+#define VAL_CC2500_IOCFG0 	0x06	
 
 //threshold at which signal is set on GDO pin
 #define VAL_CC2500_FIFOTHR 	0x07
@@ -110,14 +110,14 @@
 //maximum length of each packet (set to 255 bytes right now)
 #define VAL_CC2500_PKTLEN 	0xFF
 
-//autoflush enabled, do not append status, check address
-#define VAL_CC2500_PKTCTRL1 0x09
+//autoflush enabled, do not append status, no address check
+#define VAL_CC2500_PKTCTRL1 0x08	
 
 //CRC calculation and CRC check enabled, variable packet length mode
 #define VAL_CC2500_PKTCTRL0 0x05	
 
 //device address
-#define VAL_CC2500_ADDR 		0x3a
+#define VAL_CC2500_ADDR 		0x00	
 
 //channel number
 #define VAL_CC2500_CHANNR 	0x00
@@ -230,9 +230,7 @@
 #define CC2500_FLAG_TIMEOUT         ((uint32_t)0x1000)
 #define CC2500_CS_LOW()       GPIO_ResetBits(CC2500_SPI_CS_GPIO_PORT, CC2500_SPI_CS_PIN)
 #define CC2500_CS_HIGH()      GPIO_SetBits(CC2500_SPI_CS_GPIO_PORT, CC2500_SPI_CS_PIN)
-#define USABLE_FIFO_FOR_DATA 62
-#define BASE_ADDRESS 0x3b
-#define TX_UNDERFLOW 7
+#define SIZE_OF_FIFO 63
 
 uint8_t cc2500_SendByte(uint8_t byte);
 void cc2500_Write(uint8_t* pBuffer, uint8_t WriteAddr, uint16_t NumByteToWrite);

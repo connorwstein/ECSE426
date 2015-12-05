@@ -2,6 +2,7 @@
 #include "stdio.h"
 #include "osObjects.h" 
 
+uint8_t test_data[] = {0,0,0,1,1,1,1,0,0,0,1,0,0,1,1,2,2,1,1,0};
 
 void test_one_command_strobe(uint8_t correct_response, uint8_t register_address){
 	osDelay(100);
@@ -107,50 +108,15 @@ void test_frequency(){
 }
 
 
+void test_transmit(){
+	cc2500_Transmit_Data(test_data,20);
+	
+}
 
-//void test_fifo_write(uint8_t* output_data, uint8_t* input_data, uint8_t size_of_input_data){
-//	printf("\n\n*****test_fifo_write*****\n\n");
-//	
-//	uint8_t command_strobe_response;
-//	
-//	printf("%d\n",size_of_input_data);
-//	
-//	cc2500_Write(input_data, CC2500_FIFO, size_of_input_data);
-//	
-//	cc2500_Read_Status_Register(&command_strobe_response,CC2500_TXBYTES);
-//	printf("TXBYTES = %d\n",command_strobe_response);
-//	
-//	if(command_strobe_response == size_of_input_data){
-//		printf("write fifo pass\n");
-//	}
-//	else{
-//		printf("write fifo FAIL\n");
-//	}
-//	
-//	cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SRX);
-//	cc2500_Read(output_data,CC2500_FIFO,size_of_input_data);
-//	
-//	for(uint8_t i = 0; i<size_of_input_data; i++){
-//		
-//		printf("output_data[%d] = %d      input_data[%d] = %d\n",i,output_data[i],i,input_data[i]);
-//		
-//		if(output_data[i] == input_data[i]){
-//			printf("read fifo pass\n");
-//		}
-//		else{
-//			printf("read fifo FAIL\n");
-//		}
-//	}
-//	
-//}
 
 
 
 //int main(void){
-//	
-////	uint8_t size_of_input_data = 10;
-////	uint8_t read_array[size_of_input_data];
-////	uint8_t write_array[] = {10,9,8,7,6,5,4,3,2,1};	
 //	
 //	cc2500_start_up_procedure();
 //	
@@ -161,6 +127,8 @@ void test_frequency(){
 //	test_basic_command_strobes();
 //	
 //	test_frequency();
+//	
+//	test_transmit();
 //	
 //	printf("\n\n*****done testing*****\n\n");
 //}
