@@ -1,3 +1,15 @@
+/**
+  ******************************************************************************
+  * @file    cc2500.c
+	* @author  Connor Stein (connor.stein@mail.mcgill.ca), Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca),
+					 Faisal Al-Kabariti (faisal.al-kabariti@mail.mcgill.ca), & Kamil Ahmad (kamil.ahmad@mail.mcgill.ca)
+  * @version V1.0.0
+  * @date    12-01-2015
+  * @brief   cc2500 wireless driver
+  ****************************************************************************** 
+*/
+
+
 #include "cc2500.h"
 #include "math.h"
 #include "osObjects.h" 
@@ -12,23 +24,35 @@ __IO uint32_t  CC2500Timeout = CC2500_FLAG_TIMEOUT;
 #define DUMMY_BYTE                 ((uint8_t)0x00)
 
 
-uint8_t command_strobe_response,num_bytes_in_FIFO,num_bytes_to_read;
+//variables needed for data transmission and CC2500 initialization
+uint8_t command_strobe_response;
 uint8_t amount_of_payload_to_send, total_amount_of_data_to_send;
 uint16_t data_already_sent;
 uint8_t base_address = BASE_ADDRESS;
 uint8_t number_packets_sent;
 
+
+/**
+  * @brief  Transmits data by writing to the FIFO
+  * @param  input_array : pointer to the buffer that contains the data to write
+						num_bytes : number of bytes to transmit
+  * @retval None
+  */
 void cc2500_Transmit_Data(uint8_t* input_array,uint16_t num_bytes){
 	printf("in transmit data\n");
 	data_already_sent = 0;
 	number_packets_sent = 0;
+	
+	//loop until all data is sent
 	while(data_already_sent < num_bytes){
 		
 		osDelay(100);
 		cc2500_Read_Status_Register(&command_strobe_response,CC2500_TXBYTES);
 		
+		//make sure FIFO is empty before writing next packet
 		if(command_strobe_response == 0){
 			
+			//determine size of next packet
 			if(data_already_sent + AMOUNT_OF_WRITABLE_PATH_DATA <= num_bytes){
 				amount_of_payload_to_send = AMOUNT_OF_WRITABLE_PATH_DATA;
 			}
@@ -40,10 +64,12 @@ void cc2500_Transmit_Data(uint8_t* input_array,uint16_t num_bytes){
 			
 			total_amount_of_data_to_send = amount_of_payload_to_send + 1;
 			
+			//write pktlen, base address, and then the data
 			cc2500_Write(&total_amount_of_data_to_send, CC2500_FIFO, 1);
 			cc2500_Write(&base_address, CC2500_FIFO, 1);
 			cc2500_Write(input_array+data_already_sent, CC2500_FIFO, amount_of_payload_to_send);
 			
+			//transmit data
 			cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_STX);
 			
 			data_already_sent += amount_of_payload_to_send;
@@ -52,6 +78,8 @@ void cc2500_Transmit_Data(uint8_t* input_array,uint16_t num_bytes){
 			
 			printf("number_packets_sent %d\n",number_packets_sent);
 		}
+		
+		//flush if necessary 
 		else{
 			printf("Strobe fail\n");
 			cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SFTX);
@@ -164,16 +192,27 @@ void cc2500_One_Byte_Read(uint8_t* pBuffer, uint8_t ReadAddr)
 
 
 
+/**
+  * @brief  Resets the wireless chip, and initializes SPI and GPIO.
+  * @param  None
+  * @retval None
+  */
 void cc2500_start_up_procedure(){
 	command_strobe_response = 0;
-	num_bytes_in_FIFO = 0;
-	num_bytes_to_read = 0;
 	
+	//before sending a reset command strobe, the driver has to be initialized
 	cc2500_LowLevel_Init();
+	
+	//delay
 	osDelay(100);
 	
+	//then reset the driver
 	cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SRES);
+	
+	//configure registers
 	cc2500_LowLevel_Init();
+	
+	//delay
 	osDelay(100);
 }
 
@@ -260,8 +299,10 @@ void cc2500_LowLevel_Init(void)
 }
 
 /**
-	@brief Configures the CC2500 register values to required configuration
-*/
+	* @brief Configures the CC2500 register values to required configuration
+	* @param  None
+  * @retval None
+  */
 void cc2500_configure_registers(){
 		uint8_t configuration_values[36]={VAL_CC2500_IOCFG2,	VAL_CC2500_IOCFG0,	VAL_CC2500_FIFOTHR,	VAL_CC2500_PKTLEN,	VAL_CC2500_PKTCTRL1,
 						VAL_CC2500_PKTCTRL0, VAL_CC2500_ADDR, VAL_CC2500_CHANNR,	VAL_CC2500_FSCTRL1,	VAL_CC2500_FSCTRL0,	

@@ -437,5 +437,4 @@ void cc2500_LowLevel_Init(void);
 uint32_t cc2500_TIMEOUT_UserCallback(void);
 void cc2500_configure_registers(void);
 uint8_t cc2500_Receive_Data(uint8_t* output_array);
-void cc2500_Transmit_Data(uint8_t* input_array,uint8_t num_bytes);
 void cc2500_start_up_procedure(void);

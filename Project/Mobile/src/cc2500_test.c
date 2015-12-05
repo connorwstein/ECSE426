@@ -1,13 +1,32 @@
+/**
+  ******************************************************************************
+  * @file    cc2500_test.c
+  * @author  Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca)
+  * @version V1.0.0
+  * @date    12-01-2015
+  * @brief   test functions for the cc2500
+  ****************************************************************************** 
+*/
+
+
 #include "cc2500.h"
 #include "stdio.h"
 #include "osObjects.h" 
 
-
+//two sets of transmission data. One short length and one long length
 #define SIZE_OF_LONG_TRANSMIT 500
+
+//square and diamond.
 uint8_t test_data[] = {0,0,0,100,100,100,100,0,0,0,100,0,0,100,100,200,200,100,100,0};
 uint8_t long_transmit_data[SIZE_OF_LONG_TRANSMIT];
 	
 	
+/**
+  * @brief  confirms that a command strobe gets the correct response
+  * @param  correct_response : the expected response
+						register_address : the address to strobe
+  * @retval None
+  */
 void test_one_command_strobe(uint8_t correct_response, uint8_t register_address){
 	osDelay(100);
 	uint8_t command_strobe_response;
@@ -24,6 +43,11 @@ void test_one_command_strobe(uint8_t correct_response, uint8_t register_address)
 }
 	
 
+/**
+  * @brief  test 5 command strobes
+  * @param  None
+  * @retval None
+  */
 void test_basic_command_strobes(){
 	printf("\n\n*****test_basic_command_strobes*****\n\n");
 	test_one_command_strobe(0,CC2500_SIDLE);
@@ -34,6 +58,11 @@ void test_basic_command_strobes(){
 }
 
 
+/**
+  * @brief  read partnum and confirms that it is 128
+  * @param  None
+  * @retval None
+  */
 void read_partnum(){
 	printf("\n\n*****read_partnum*****\n\n");
 	
@@ -52,6 +81,11 @@ void read_partnum(){
 }
 
 
+/**
+  * @brief  test one write and read.
+  * @param  test_write_value : the value to write
+  * @retval None
+  */
 void test_one_write_and_read(uint8_t test_write_value){
 	uint8_t command_strobe_response;
 	
@@ -72,6 +106,12 @@ void test_one_write_and_read(uint8_t test_write_value){
 	
 }
 
+
+/**
+  * @brief  test read and write functionality
+  * @param  None
+  * @retval None
+  */
 void test_write_and_read(){
 	printf("\n\n*****test_write_and_read*****\n\n");
 	test_one_write_and_read(7);
@@ -79,6 +119,11 @@ void test_write_and_read(){
 }
 
 
+/**
+  * @brief  make sure we are operating at the correct frequency
+  * @param  None
+  * @retval None
+  */
 void test_frequency(){
 	printf("\n\n*****test_frequency*****\n\n");
 	
@@ -112,6 +157,11 @@ void test_frequency(){
 }
 
 
+/**
+  * @brief  transmit the square and diamond
+  * @param  None
+  * @retval None
+  */
 void test_transmit(){
 	cc2500_Transmit_Data(test_data,20);
 	
@@ -119,6 +169,11 @@ void test_transmit(){
 	
 }
 
+/**
+  * @brief  transmit a zig zag with long path length
+  * @param  None
+  * @retval None
+  */
 void long_transmit(){
 	for(int i=0;i<SIZE_OF_LONG_TRANSMIT;i++){
 		if(i%2==0){
@@ -147,9 +202,9 @@ void long_transmit(){
 //	
 //	test_frequency();
 //	
-//	//test_transmit();
+//	test_transmit();
 //	
-//	long_transmit();
+//	//long_transmit();
 //	
 //	printf("\n\n*****done testing*****\n\n");
 //}

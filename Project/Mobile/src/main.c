@@ -1,6 +1,13 @@
-/*----------------------------------------------------------------------------
- * CMSIS-RTOS 'main' function template
- *---------------------------------------------------------------------------*/
+/**
+  ******************************************************************************
+  * @file    main.c
+  * @author  Connor Stein (connor.stein@mail.mcgill.ca), Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca),
+						 Faisal Al-Kabariti (faisal.al-kabariti@mail.mcgill.ca), & Kamil Ahmad (kamil.ahmad@mail.mcgill.ca)
+  * @version V1.0.0
+  * @date    12-01-2015
+  * @brief   Main file for Mobile board
+  ****************************************************************************** 
+*/
 
 #define osObjectsPublic                     // define objects in main module
 #include "osObjects.h"                      // RTOS object definitions
@@ -15,11 +22,14 @@
 #include "cc2500.h"
 #include "Timers_and_interrupts.h"
 
-#define MAX_PATH_LENGTH 500 //20 means 10 (X, Y) points
+
+//maximum path length allowed
+#define MAX_PATH_LENGTH 500 //500 means 250 (X, Y) points
 
 #define STEP_THRESHOLD -75000
 #define RIEMANN_SUM_THRESHOLD 50
 
+//determines the amount of time between button detections
 #define DEBOUNCE_CONSTANT 100
 
 // Step counting
@@ -70,6 +80,9 @@ void EXTI0_IRQHandler(void){
 }
 
 
+/**
+	@brief Handler for the TIM3 timer (100 Hz), used for button detection
+*/
 void TIM3_IRQHandler(void)
 {
 	if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
@@ -80,6 +93,9 @@ void TIM3_IRQHandler(void)
 }
 
 
+/**
+	@brief Detects when the button is pressed, and switches states
+*/
 void button_detector(void const *argument){
 
 	uint8_t current_key = 0; 
@@ -94,21 +110,27 @@ void button_detector(void const *argument){
 		
 		delay_counter++;
 
+		//debouncing
 		if(delay_counter>DEBOUNCE_CONSTANT){
 		
 			current_key = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0);
-						
+			
+			//if rising edge detected
 			if(current_key == 1 && previous_key == 0){
 				// Key change detected (key press)
 				button_has_been_pressed += 1;
 				
 				printf("button pressed \n");
 				delay_counter = 0;
+				
+				//for all button presses after the first button press, transmit data
 				if(button_has_been_pressed > 1){
 					printf("transmission thread signal set\n");
 					enable_sensor_interrupt = 0;
 					osSignalSet(transmission_thread,1);
 				}
+				
+				//for the first button press, start path recording
 				else{
 					printf("start path recording\n");
 					memset(path_data, 0, sizeof(path_data)); 
@@ -128,7 +150,11 @@ void button_detector(void const *argument){
 
 
 
-
+/**
+  * @brief  Shifts the data so that the minimum point is (0,0)
+  * @param  None
+  * @retval None
+  */
 void scale_path(void){
 	int8_t min_x = path_data[0], min_y = path_data[1];
 	int i;
@@ -154,6 +180,12 @@ void scale_path(void){
 	}
 }
 
+
+/**
+  * @brief  Transmit path data
+  * @param  None
+  * @retval None
+  */
 void transmission(void const *argument){
 	
 	while(1){
@@ -175,6 +207,11 @@ void transmission(void const *argument){
 }
 
 
+/**
+  * @brief  Adds a new point to path data.
+  * @param  new_state : the direction in which the person walked
+  * @retval None
+  */
 void update_path(uint8_t new_state){
 	printf("STATE %d PATH_INDEX %d YAW %f\n", new_state, path_index, yaw/1000);	
 	switch(new_state){
@@ -224,6 +261,12 @@ void update_path(uint8_t new_state){
 	
 }
 
+
+/**
+  * @brief  Determines the direction which the person is stepping in.
+  * @param  None
+  * @retval None
+  */
 uint8_t get_state(void){
 		float yaw_degrees = yaw/1000;
 		if((yaw_degrees < 22.5 && yaw_degrees >= 0) || yaw_degrees > 337.5){
@@ -252,6 +295,11 @@ uint8_t get_state(void){
 		}
 }
 
+/**
+  * @brief  Updates the angle determined by the gyroscope
+  * @param  new_reading : new gyroscope reading
+  * @retval None
+  */
 void update_yaw(int32_t new_reading){
 	yaw_buffer[0] = yaw_buffer[1]; //copy previous value into old spot
 	yaw_buffer[1] = new_reading; //put new value in
@@ -268,6 +316,12 @@ void update_yaw(int32_t new_reading){
 	}
 }
 
+
+/**
+  * @brief  Uses the gyroscope to determine if the user is taking a step and in what direction. Update path_data
+  * @param  None
+  * @retval None
+  */
 void sensor_reader(void const *argument){
 
 	while(1){

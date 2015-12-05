@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
   * @file    LCD_functions.c
-  * @author  Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca)
+  * @author  Connor Stein (connor.stein@mail.mcgill.ca), Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca),
+						 Faisal Al-Kabariti (faisal.al-kabariti@mail.mcgill.ca), & Kamil Ahmad (kamil.ahmad@mail.mcgill.ca)
   * @version V1.0.0
   * @date    12-01-2015
   * @brief   Helper functions for drawing on the LCD

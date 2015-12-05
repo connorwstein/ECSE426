@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
   * @file    cc2500.c
-  * @author  Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca)
+  * @author  Connor Stein (connor.stein@mail.mcgill.ca), Kevin Musgrave (takeshi.musgrave@mail.mcgill.ca),
+						 Faisal Al-Kabariti (faisal.al-kabariti@mail.mcgill.ca), & Kamil Ahmad (kamil.ahmad@mail.mcgill.ca)
   * @version V1.0.0
   * @date    12-01-2015
   * @brief   cc2500 wireless driver
@@ -285,7 +286,7 @@ void cc2500_LowLevel_Init(void)
   */
 void cc2500_configure_registers(){
 		//delay before setting register values
-		for(int i=0;i<10000000;i++);
+		osDelay(100);
 		uint8_t configuration_values[36]={VAL_CC2500_IOCFG2,	VAL_CC2500_IOCFG0,	VAL_CC2500_FIFOTHR,	VAL_CC2500_PKTLEN,	VAL_CC2500_PKTCTRL1,
 						VAL_CC2500_PKTCTRL0, VAL_CC2500_ADDR, VAL_CC2500_CHANNR,	VAL_CC2500_FSCTRL1,	VAL_CC2500_FSCTRL0,	
 						VAL_CC2500_FREQ2,	VAL_CC2500_FREQ1,	VAL_CC2500_FREQ0,	VAL_CC2500_MDMCFG4,	VAL_CC2500_MDMCFG3,
