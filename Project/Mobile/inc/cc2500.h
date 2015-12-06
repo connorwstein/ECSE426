@@ -320,8 +320,8 @@ CC2500 Register settings
 //Variable packet length
 #define VAL_CC2500_PKTCTRL0 0x05	
 
-//set address of this board to 3b.
-#define VAL_CC2500_ADDR 		0x3b	
+//set address of this board to 3a.
+#define VAL_CC2500_ADDR 		0x3a	
 
 //default setting
 #define VAL_CC2500_CHANNR 	0x00

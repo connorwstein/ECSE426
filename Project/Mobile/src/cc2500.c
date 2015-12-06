@@ -82,7 +82,12 @@ void cc2500_Transmit_Data(uint8_t* input_array,uint16_t num_bytes){
 		//flush if necessary 
 		else{
 			printf("Strobe fail\n");
-			cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SFTX);
+			cc2500_Send_Command_Strobe(&command_strobe_response, CC2500_SRES);
+			cc2500_LowLevel_Init();
+			osDelay(100);
+			if(data_already_sent != 0){
+				data_already_sent -= command_strobe_response;
+			}
 		}
 	}
 }
